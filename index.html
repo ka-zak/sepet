@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keskin Etiket ve Yazı Okuyucu</title>
+    
+    <!-- Çevrimdışı çalışabilen dünyanın en popüler OCR (Yazı Okuma) kütüphanesi -->
+    <script src="https://jsdelivr.net"></script>
+
+    <style>
+        /* Google Chrome Bembeyaz Tasarım Felsefesi */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ffffff;
+            display: flex;
+            height: 100vh;
+            color: #202124;
+        }
+
+        /* Sol Ana Alan (4'te 3) */
+        .ana-alan {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            position: relative;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4285F4; /* Google Mavisi */
+            margin-bottom: 20px;
+        }
+
+        /* Yüksek Çözünürlüklü ve Keskin Kamera Alanı */
+        #kamera-kapsayici {
+            width: 100%;
+            height: 280px;
+            border: 2px solid #4285F4;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: none;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        #kamera-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* Donanımsal Keskinleştirme Filtreleri */
+            filter: contrast(1.2) sharpness(1.5);
+        }
+
+        .okuma-hedefi {
+            position: absolute;
+            top: 50%;
+            left: 5%;
+            right: 5%;
+            height: 60px;
+            transform: translateY(-50%);
+            border: 2px dashed #ff1744;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+            z-index: 5;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        .hedef-yazisi {
+            position: absolute;
+            top: -25px;
+            left: 5px;
+            color: #ff1744;
+            font-size: 12px;
+            font-weight: bold;
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Ürün Listesi */
+        .sepet-listesi {
+            flex: 1;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+        }
+
+        .urun-karti {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background-color: #ffffff;
+            border: 1px solid #e8eaed;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .urun-bilgi {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .urun-adi {
+            font-weight: bold;
+            color: #202124;
+        }
+
+        .urun-detay {
+            font-size: 13px;
+            color: #5f6368;
+            margin-top: 20px;
+        }
+
+        .adet-kontro {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .adet-btn {
+            background-color: #f1f3f4;
+            border: 1px solid #dadce0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Sağ Alan (4'te 1 Reklam) */
+        .reklam-alani {
+            flex: 1;
+            background-color: #f1f3f4;
+            border-left: 1px solid #dadce0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            color: #5f6368;
+        }
+
+        /* Alt Sabit Bar */
+        .alt-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0 0 0;
+            border-top: 1px solid #dadce0;
+            background-color: #ffffff;
+        }
+
+        .toplam-alan {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1a73e8;
+        }
+
+        .kamera-btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .kamera-btn.kapat {
+            background-color: #d93025;
+        }
+
+        .tarama-durumu {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 10;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SOL ALAN -->
+    <div class="ana-alan">
+        <div class="logo">AkıllıSepet</div>
+        
+        <!-- Keskinleştirilmiş Kamera Penceresi -->
+        <div id="kamera-kapsayici">
+            <video id="kamera-video" autoplay playsinline></video>
+            <div class="okuma-hedefi">
+                <div class="hedef-yazisi">Etiketi / Yazıyı Buraya Hizalayın</div>
+            </div>
+            <div id="durum-etiket" class="tarama-durumu">Yazı analiz ediliyor...</div>
+        </div>
+
+        <!-- Okunan Etiketlerin Listesi -->
+        <div class="sepet-listesi" id="sepet-listesi">
+            <p id="bos-mesaj" style="color: #70757a; text-align: center;">Cihaz hazır. Market etiketindeki ismi ve fiyatı listelemek için kamerayı başlatın.</p>
+        </div>
+
+        <!-- Alt Sabit Bar -->
+        <div class="alt-bar">
+            <div class="toplam-alan">Toplam: <span id="genel-toplam">0.00</span> TL</div>
+            <button class="kamera-btn" id="btn-kamera" onclick="kameraKontrol()">📸 Kamerayı Başlat</button>
+        </div>
+    </div>
+
+    <!-- SAĞ REKLAM ALANI -->
+    <div class="reklam-alani">
+        <div>
+            <p>📢 REKLAM PANELİ</p>
+            <small style="color: #80868b;">BİM, Decathlon veya Carrefour özel indirimleri burada görünecektir.</small>
+        </div>
+    </div>
+
+    <!-- Kamera ve Çevrimdışı OCR Mantık Kodları -->
+    <script>
+        let akis = null;
+        let ocrIsleyici = null;
+        let taramaAraligi = null;
+        let sepet =;
+
+        // Sayfa ilk yüklendiğinde yapay zeka motorunu arka planda hazırlar (İnternetsiz çalışabilmesi için ön yükleme)
+        async function ocrHazirla() {
+            ocrIsleyici = await Tesseract.createWorker('tur'); // Türkçe dil desteği
+        }
+        ocrHazirla();
+
+        async function kameraKontrol() {
+            const video = document.getElementById('kamera-video');
+            const kapsayici = document.getElementById('kamera-kapsayici');
+            const btn = document.getElementById('btn-kamera');
+
+            if (!akis) {
+                try {
+                    // En yüksek çözünürlük ve keskin odaklama için kamera ayarları
+                    akis = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: "environment",
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 },
+                            focusMode: "continuous"
+                        }
+                    });
+                    video.srcObject = akis;
+                    kapsayici.style.display = "block";
+                    btn.innerHTML = "❌ Kamerayı Kapat";
+                    btn.classList.add('kapat');
+                    
+                    // Her 2 saniyede bir kameradan anlık görüntü alıp yazıyı okur
+                    taramaAraligi = setInterval(etiketAnalizEt, 2000);
+                } catch (err) {
+                    alert("Kameraya erişilemedi! Lütfen yüksek çözünürlük izni verin.");
+                }
+            } else {
+                // Kamerayı güvenli kapatma
+                clearInterval(taramaAraligi);
+                akis.getTracks().forEach(track => track.stop());
+                akis = null;
+                kapsayici.style.display = "none";
+                btn.innerHTML = "📸 Kamerayı Başlat";
+                btn.classList.remove('kapat');
+            }
+        }
+
+        async function etiketAnalizEt() {
+            const video = document.getElementById('kamera-video');
+            const durum = document.getElementById('durum-etiket');
+            
+            // Görseli yakalamak için geçici sanal tuval
+            const tuval = document.createElement('canvas');
+            tuval.width = video.videoWidth;
+            tuval.height = video.videoHeight;
+            const ctx = tuval.getContext('2d');
+            ctx.drawImage(video, 0, 0, tuval.width, tuval.height);
+
+            durum.style.display = "block";
+
+            try {
+                // Fotoğraftaki yazıları tamamen cihaz içinde (internetsiz) metne çevirir
+                const sonuc = await ocrIsleyici.recognize(tuval);
+                const okunanMetin = sonuc.data.text;
+                
+                // Metin içerisinden Fiyatı (Rakamı) ve Ürün İsmini ayıklama mantığı
+                metniAnalizEtVeEkle(okunanMetin);
+            } catch (e) {
+                console.error("OCR Hatası:", e);
+            }
+            
+            durum.style.display = "none";
+        }
+
+        function metniAnalizEtVeEkle(metin) {
+            // Satırlara bölüyoruz
+            const satirlar = metin.split('\n').map(s => s.trim()).filter(s => s.length > 2);
