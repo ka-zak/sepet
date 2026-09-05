@@ -1,7 +1,308 @@
-let akis = null;
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KasaRaf - Akıllı Alışveriş Sepetim</title>
+    
+    <!-- Tesseract.js Çevrimdışı/Tarayıcı İçi OCR Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+    <style>
+        /* Google Chrome Minimalist Tasarımı */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            color: #202124;
+            height: 100vh;
+        }
+
+        /* Tüm Ekranı Ortala ve Dikey Hizala */
+        .uygulama-kapsayici {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            box-sizing: border-box;
+            height: 100vh;
+        }
+
+        /* Üst Bölüm: Dinamik Google Tarzı Alan */
+        .ust-banner-alani {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 26px;
+            font-weight: bold;
+            color: #4285F4;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        /* Google Chrome Esintili Dinamik Reklam ve Özel Gün Kutusu */
+        .dinamik-reklam-kutusu {
+            width: 90%;
+            max-width: 400px;
+            background-color: #f8f9fa;
+            border: 1px solid #dadce0;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #5f6368;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        /* Keskin Kamera Alanı */
+        #kamera-kapsayici {
+            width: 100%;
+            height: 240px;
+            border: 2px solid #4285F4;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: none;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        #kamera-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: contrast(1.2) sharpness(1.5);
+        }
+
+        .okuma-hedefi {
+            position: absolute;
+            top: 50%;
+            left: 5%;
+            right: 5%;
+            height: 50px;
+            transform: translateY(-50%);
+            border: 2px dashed #ff1744;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+            z-index: 5;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        .hedef-yazisi {
+            position: absolute;
+            top: -22px;
+            left: 5px;
+            color: #ff1744;
+            font-size: 11px;
+            font-weight: bold;
+            background: white;
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+
+        /* Ürün Listesi */
+        .sepet-listesi {
+            flex: 1;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 12px;
+            overflow-y: auto;
+            background-color: #ffffff;
+        }
+
+        .urun-karti {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background-color: #f8f9fa;
+            border: 1px solid #e8eaed;
+            border-radius: 8px;
+            gap: 10px;
+        }
+
+        .urun-sol {
+            display: flex;
+            flex-direction: column;
+            flex: 2;
+        }
+
+        .urun-adi {
+            font-weight: 600;
+            color: #202124;
+            font-size: 14px;
+        }
+
+        .urun-fiyat {
+            font-size: 12px;
+            color: #5f6368;
+            margin-top: 2px;
+        }
+
+        .urun-sag {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex: 2;
+            gap: 12px;
+        }
+
+        .adet-kontrol {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background-color: #ffffff;
+            padding: 2px 4px;
+            border-radius: 20px;
+            border: 1px solid #dadce0;
+        }
+
+        .adet-btn {
+            background-color: #f1f3f4;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .adet-input {
+            width: 30px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            font-weight: bold;
+            color: #202124;
+            outline: none;
+        }
+
+        .adet-input::-webkit-outer-spin-button,
+        .adet-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .satir-toplam {
+            font-weight: bold;
+            color: #202124;
+            min-width: 70px;
+            text-align: right;
+            font-size: 14px;
+        }
+
+        .sil-btn {
+            background-color: transparent;
+            color: #d93025;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+        }
+
+        /* Alt Sabit Bar */
+        .alt-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0 5px 0;
+            border-top: 1px solid #dadce0;
+            background-color: #ffffff;
+            margin-top: 10px;
+        }
+
+        .toplam-alan {
+            font-size: 20px;
+            font-weight: bold;
+            color: #202124;
+        }
+
+        .kamera-btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 24px;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(60,64,67,0.3);
+        }
+
+        .kamera-btn.kapat {
+            background-color: #d93025;
+        }
+
+        .tarama-durumu {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            z-index: 10;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="uygulama-kapsayici">
+        
+        <!-- ÜST BÖLÜM: Logo ve Yeni Dinamik Google Tarzı Banner -->
+        <div class="ust-banner-alani">
+            <div class="logo">KasaRaf</div>
+            <div id="dinamik-reklam" class="dinamik-reklam-kutusu">
+                ✨ Yükleniyor...
+            </div>
+        </div>
+        
+        <!-- Keskinleştirilmiş Kamera Penceresi -->
+        <div id="kamera-kapsayici">
+            <video id="kamera-video" autoplay playsinline></video>
+            <div class="okuma-hedefi">
+                <div class="hedef-yazisi">Etiketi / Fiyatı Hizalayın</div>
+            </div>
+            <div id="durum-etiket" class="tarama-durumu">Yazı analiz ediliyor...</div>
+        </div>
+
+        <!-- Sepet Listesi -->
+        <div class="sepet-listesi" id="sepet-listesi">
+            <p id="bos-mesaj" style="color: #70757a; text-align: center; margin-top: 40px;">Sepetiniz boş. Raftaki fiyat etiketini okutmak için kamerayı başlatın.</p>
+        </div>
+
+        <!-- Alt Kontrol Barı -->
+        <div class="alt-bar">
+            <div class="toplam-alan">Toplam: <span id="genel-toplam">0.00</span> TL</div>
+            <button class="kamera-btn" id="btn-kamera" onclick="kameraKontrol()">📸 Kamerayı Başlat</button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT KODLARI (Mutlaka script etiketleri içinde olmalı) -->
+    <script>
+        let akis = null;
         let taramaAraligi = null;
         let sepet = [];
-        let benzersizUrunId = 0; // Silme işlemi için her ürüne özel ID
+        let benzersizUrunId = 0;
 
         // Dinamik Reklam Motoru
         function dinamikKonseptGuncelle() {
@@ -32,14 +333,12 @@ let akis = null;
                     btn.innerHTML = '🛑 Kamerayı Kapat';
                     btn.classList.add('kapat');
                     
-                    // Kamerayı açınca otomatik okumayı başlat
                     okumayiBaslat(video, durum);
                     
                 } catch (hata) {
                     alert("Kameraya erişilemedi!");
                 }
             } else {
-                // Kapatma işlemi
                 let trackler = akis.getTracks();
                 trackler.forEach(track => track.stop());
                 video.srcObject = null;
@@ -48,7 +347,6 @@ let akis = null;
                 btn.innerHTML = '📸 Kamerayı Başlat';
                 btn.classList.remove('kapat');
                 
-                // Taramayı durdur
                 clearInterval(taramaAraligi);
                 durum.style.display = 'none';
             }
@@ -61,7 +359,6 @@ let akis = null;
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
-            // Her 3 saniyede bir kameradan fotoğraf çekip analiz eder
             taramaAraligi = setInterval(async () => {
                 if (!akis || video.readyState !== 4) return;
 
@@ -72,29 +369,23 @@ let akis = null;
                 durum.innerText = "Yazı analiz ediliyor...";
 
                 try {
-                    // Tesseract ile Türkçe karakter desteğiyle yazıyı oku
                     const { data: { text } } = await Tesseract.recognize(canvas, 'tur');
                     
-                    // Fiyat tespiti (Örn: 12.99, 54,50)
                     const fiyatRegex = /(\d+)[.,](\d{2})/;
                     const eslesme = text.match(fiyatRegex);
 
                     if (eslesme) {
                         const fiyat = parseFloat(eslesme[1] + "." + eslesme[2]);
                         
-                        // Fiyatın olduğu satırdan veya genel metinden ürün adını çekmeye çalış
                         let isim = text.replace(fiyatRegex, '').replace(/TL|₺/ig, '').trim();
-                        // Sadece harfleri bırak (Gereksiz barkod sayılarını temizle)
                         isim = isim.replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ ]/g, '').trim();
                         
-                        // İsim çok kısaysa varsayılan isim ata
                         if (isim.length < 3) isim = "Raf Ürünü";
 
                         sepeteEkle(isim, fiyat);
                         
                         durum.innerText = "✅ Ürün Eklendi!";
                         
-                        // Üst üste aynı ürünü okumaması için taramayı kısa süre duraklat
                         clearInterval(taramaAraligi);
                         setTimeout(() => okumayiBaslat(video, durum), 4000);
                     } else {
@@ -108,11 +399,10 @@ let akis = null;
 
         // --- SEPET YÖNETİMİ ---
         function sepeteEkle(isim, fiyat) {
-            // Ürün sepette zaten var mı diye bak (İsim ve Fiyat aynıysa)
             const mevcutUrun = sepet.find(u => u.isim === isim && u.fiyat === fiyat);
             
             if (mevcutUrun) {
-                mevcutUrun.adet++; // Varsa sadece adedi artır
+                mevcutUrun.adet++; 
             } else {
                 benzersizUrunId++;
                 sepet.push({ id: benzersizUrunId, isim: isim, fiyat: fiyat, adet: 1 });
@@ -140,7 +430,6 @@ let akis = null;
                 const kart = document.createElement('div');
                 kart.className = 'urun-karti';
                 
-                // HTML şablonu oluştur (Senin tasarımınla aynı)
                 kart.innerHTML = `
                     <div class="urun-sol">
                         <div class="urun-adi">${urun.isim}</div>
@@ -162,31 +451,32 @@ let akis = null;
             genelToplamAlan.innerText = genelToplam.toFixed(2);
         }
 
-        // Adet artırma/azaltma butonları (+ / -)
+        // Adet artırma/azaltma butonları
         function adetButonu(id, degisim) {
             const urun = sepet.find(u => u.id === id);
             if (urun) {
                 urun.adet += degisim;
-                if (urun.adet < 1) urun.adet = 1; // En az 1 adet olabilir
+                if (urun.adet < 1) urun.adet = 1;
                 sepetiGuncelle();
             }
         }
 
-        // Klavyeden 10, 20 gibi yüksek rakamlar girildiğinde tetiklenir
+        // Klavyeden giriş
         function klavyeAdetGiris(event, id) {
             const urun = sepet.find(u => u.id === id);
             if (urun) {
                 let yeniAdet = parseInt(event.target.value);
-                // Eğer harf girilirse veya 1'den küçük değer girilirse 1 yap
                 if (isNaN(yeniAdet) || yeniAdet < 1) yeniAdet = 1;
                 urun.adet = yeniAdet;
                 sepetiGuncelle();
             }
         }
 
-        // Satırı tamamen siler
+        // Satırı siler
         function urunuSil(id) {
-            // Tıklanan ID'ye sahip olmayanları filtreleyip yeni sepet oluşturuyoruz
             sepet = sepet.filter(u => u.id !== id);
             sepetiGuncelle();
         }
+    </script>
+</body>
+</html>
