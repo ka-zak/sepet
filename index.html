@@ -1,482 +1,1678 @@
 <!DOCTYPE html>
+
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KasaRaf - Akıllı Alışveriş Sepetim</title>
-    
-    <!-- Tesseract.js Çevrimdışı/Tarayıcı İçi OCR Kütüphanesi -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-    <style>
-        /* Google Chrome Minimalist Tasarımı */
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #ffffff;
-            display: flex;
-            justify-content: center;
-            color: #202124;
-            height: 100vh;
-        }
+<meta charset="UTF-8">
 
-        /* Tüm Ekranı Ortala ve Dikey Hizala */
-        .uygulama-kapsayici {
-            width: 100%;
-            max-width: 600px;
-            display: flex;
-            flex-direction: column;
-            padding: 15px;
-            box-sizing: border-box;
-            height: 100vh;
-        }
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
 
-        /* Üst Bölüm: Dinamik Google Tarzı Alan */
-        .ust-banner-alani {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 15px;
-            text-align: center;
-        }
+<title>KasaRaf - Akıllı Alışveriş Sepetim</title>
 
-        .logo {
-            font-size: 26px;
-            font-weight: bold;
-            color: #4285F4;
-            margin-bottom: 8px;
-            letter-spacing: -1px;
-        }
+<!-- Tesseract OCR -->
 
-        /* Google Chrome Esintili Dinamik Reklam ve Özel Gün Kutusu */
-        .dinamik-reklam-kutusu {
-            width: 90%;
-            max-width: 400px;
-            background-color: #f8f9fa;
-            border: 1px solid #dadce0;
-            border-radius: 20px;
-            padding: 8px 16px;
-            font-size: 13px;
-            color: #5f6368;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-        }
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-        /* Keskin Kamera Alanı */
-        #kamera-kapsayici {
-            width: 100%;
-            height: 240px;
-            border: 2px solid #4285F4;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            display: none;
-            position: relative;
-            background: #000;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
+<style>
 
-        #kamera-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            filter: contrast(1.2) sharpness(1.5);
-        }
+/* ============================= */
+/* GENEL TASARIM */
+/* ============================= */
 
-        .okuma-hedefi {
-            position: absolute;
-            top: 50%;
-            left: 5%;
-            right: 5%;
-            height: 50px;
-            transform: translateY(-50%);
-            border: 2px dashed #ff1744;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
-            z-index: 5;
-            border-radius: 4px;
-            pointer-events: none;
-        }
+* {
+    box-sizing: border-box;
+}
 
-        .hedef-yazisi {
-            position: absolute;
-            top: -22px;
-            left: 5px;
-            color: #ff1744;
-            font-size: 11px;
-            font-weight: bold;
-            background: white;
-            padding: 1px 5px;
-            border-radius: 4px;
-        }
+body {
+    margin: 0;
+    padding: 0;
 
-        /* Ürün Listesi */
-        .sepet-listesi {
-            flex: 1;
-            border: 1px solid #dadce0;
-            border-radius: 8px;
-            padding: 12px;
-            overflow-y: auto;
-            background-color: #ffffff;
-        }
+    font-family:
+        Arial,
+        "Segoe UI",
+        sans-serif;
 
-        .urun-karti {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 12px;
-            margin-bottom: 8px;
-            background-color: #f8f9fa;
-            border: 1px solid #e8eaed;
-            border-radius: 8px;
-            gap: 10px;
-        }
+    background: #ffffff;
 
-        .urun-sol {
-            display: flex;
-            flex-direction: column;
-            flex: 2;
-        }
+    display: flex;
+    justify-content: center;
 
-        .urun-adi {
-            font-weight: 600;
-            color: #202124;
-            font-size: 14px;
-        }
+    color: #202124;
 
-        .urun-fiyat {
-            font-size: 12px;
-            color: #5f6368;
-            margin-top: 2px;
-        }
+    min-height: 100vh;
+}
 
-        .urun-sag {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            flex: 2;
-            gap: 12px;
-        }
 
-        .adet-kontrol {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background-color: #ffffff;
-            padding: 2px 4px;
-            border-radius: 20px;
-            border: 1px solid #dadce0;
-        }
+/* ============================= */
+/* ANA UYGULAMA */
+/* ============================= */
 
-        .adet-btn {
-            background-color: #f1f3f4;
-            border: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+.uygulama-kapsayici {
 
-        .adet-input {
-            width: 30px;
-            text-align: center;
-            border: none;
-            background: transparent;
-            font-size: 13px;
-            font-weight: bold;
-            color: #202124;
-            outline: none;
-        }
+    width: 100%;
+    max-width: 700px;
 
-        .adet-input::-webkit-outer-spin-button,
-        .adet-input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
+    display: flex;
+    flex-direction: column;
 
-        .satir-toplam {
-            font-weight: bold;
-            color: #202124;
-            min-width: 70px;
-            text-align: right;
-            font-size: 14px;
-        }
+    padding: 15px;
 
-        .sil-btn {
-            background-color: transparent;
-            color: #d93025;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            padding: 4px;
-        }
+    min-height: 100vh;
+}
 
-        /* Alt Sabit Bar */
-        .alt-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0 5px 0;
-            border-top: 1px solid #dadce0;
-            background-color: #ffffff;
-            margin-top: 10px;
-        }
 
-        .toplam-alan {
-            font-size: 20px;
-            font-weight: bold;
-            color: #202124;
-        }
+/* ============================= */
+/* ÜST BÖLÜM */
+/* ============================= */
 
-        .kamera-btn {
-            background-color: #1a73e8;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 15px;
-            font-weight: bold;
-            border-radius: 24px;
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(60,64,67,0.3);
-        }
+.ust-banner-alani {
 
-        .kamera-btn.kapat {
-            background-color: #d93025;
-        }
+    display: flex;
+    flex-direction: column;
 
-        .tarama-durumu {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            z-index: 10;
-            display: none;
-        }
-    </style>
+    align-items: center;
+
+    margin-bottom: 15px;
+
+    text-align: center;
+}
+
+
+.logo {
+
+    font-size: 28px;
+
+    font-weight: bold;
+
+    color: #4285F4;
+
+    margin-bottom: 8px;
+}
+
+
+.dinamik-reklam-kutusu {
+
+    width: 95%;
+
+    max-width: 500px;
+
+    background-color: #f8f9fa;
+
+    border: 1px solid #dadce0;
+
+    border-radius: 20px;
+
+    padding: 10px 16px;
+
+    font-size: 13px;
+
+    color: #5f6368;
+
+    box-shadow:
+        0 1px 3px
+        rgba(0,0,0,0.08);
+}
+
+
+/* ============================= */
+/* KAMERA */
+/* ============================= */
+
+#kamera-kapsayici {
+
+    width: 100%;
+
+    height: 260px;
+
+    border: 2px solid #4285F4;
+
+    border-radius: 12px;
+
+    margin-bottom: 15px;
+
+    display: none;
+
+    position: relative;
+
+    background: #000;
+
+    overflow: hidden;
+}
+
+
+#kamera-video {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+}
+
+
+/* OCR HEDEF ALANI */
+
+.okuma-hedefi {
+
+    position: absolute;
+
+    top: 50%;
+
+    left: 5%;
+
+    right: 5%;
+
+    height: 70px;
+
+    transform: translateY(-50%);
+
+    border: 2px dashed #ff1744;
+
+    box-shadow:
+        0 0 0 9999px
+        rgba(0,0,0,0.35);
+
+    z-index: 5;
+
+    border-radius: 5px;
+
+    pointer-events: none;
+}
+
+
+.hedef-yazisi {
+
+    position: absolute;
+
+    top: -25px;
+
+    left: 5px;
+
+    color: #ff1744;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    background: white;
+
+    padding: 3px 6px;
+
+    border-radius: 4px;
+}
+
+
+/* OCR DURUM */
+
+.tarama-durumu {
+
+    position: absolute;
+
+    bottom: 10px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    background:
+        rgba(0,0,0,0.75);
+
+    color: white;
+
+    padding: 7px 14px;
+
+    border-radius: 20px;
+
+    font-size: 12px;
+
+    z-index: 10;
+
+    display: none;
+
+    white-space: nowrap;
+}
+
+
+/* ============================= */
+/* SEPET TABLOSU */
+/* ============================= */
+
+.sepet-listesi {
+
+    flex: 1;
+
+    border: 1px solid #dadce0;
+
+    border-radius: 10px;
+
+    padding: 10px;
+
+    overflow-y: auto;
+
+    background-color: #ffffff;
+
+    min-height: 250px;
+}
+
+
+/* TABLO BAŞLIĞI */
+
+.tablo-baslik {
+
+    display: grid;
+
+    grid-template-columns:
+        2.2fr
+        1fr
+        80px
+        1.2fr
+        45px;
+
+    gap: 8px;
+
+    align-items: center;
+
+    padding: 10px 5px;
+
+    font-weight: bold;
+
+    font-size: 12px;
+
+    color: #5f6368;
+
+    border-bottom:
+        2px solid #dadce0;
+}
+
+
+/* TABLO SATIRI */
+
+.urun-satiri {
+
+    display: grid;
+
+    grid-template-columns:
+        2.2fr
+        1fr
+        80px
+        1.2fr
+        45px;
+
+    gap: 8px;
+
+    align-items: center;
+
+    padding: 10px 5px;
+
+    border-bottom:
+        1px solid #e8eaed;
+
+    min-height: 55px;
+}
+
+
+.urun-satiri:last-child {
+
+    border-bottom: none;
+}
+
+
+/* ÜRÜN ADI */
+
+.tablo-urun-adi {
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    word-break: break-word;
+}
+
+
+/* FİYAT */
+
+.tablo-fiyat {
+
+    font-size: 13px;
+
+    color: #5f6368;
+}
+
+
+/* ADET */
+
+.adet-input {
+
+    width: 70px;
+
+    max-width: 100%;
+
+    padding: 8px 4px;
+
+    text-align: center;
+
+    border:
+        1px solid #4285F4;
+
+    border-radius: 7px;
+
+    background: white;
+
+    font-size: 16px;
+
+    font-weight: bold;
+
+    outline: none;
+}
+
+
+.adet-input:focus {
+
+    box-shadow:
+        0 0 0 2px
+        rgba(66,133,244,0.2);
+}
+
+
+/* SATIR TOPLAMI */
+
+.satir-toplam {
+
+    font-size: 14px;
+
+    font-weight: bold;
+
+    text-align: right;
+
+    color: #202124;
+}
+
+
+/* SİL BUTONU */
+
+.sil-btn {
+
+    border: none;
+
+    background: #fff0f0;
+
+    color: #d93025;
+
+    cursor: pointer;
+
+    font-size: 18px;
+
+    padding: 7px;
+
+    border-radius: 7px;
+}
+
+
+.sil-btn:hover {
+
+    background: #ffdede;
+}
+
+
+/* ============================= */
+/* ALT BAR */
+/* ============================= */
+
+.alt-bar {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 15px 0 5px 0;
+
+    border-top:
+        1px solid #dadce0;
+
+    background-color: #ffffff;
+
+    margin-top: 10px;
+}
+
+
+.toplam-alan {
+
+    font-size: 20px;
+
+    font-weight: bold;
+
+    color: #202124;
+}
+
+
+/* KAMERA BUTONU */
+
+.kamera-btn {
+
+    background-color: #1a73e8;
+
+    color: white;
+
+    border: none;
+
+    padding: 12px 20px;
+
+    font-size: 14px;
+
+    font-weight: bold;
+
+    border-radius: 24px;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 1px 3px
+        rgba(60,64,67,0.3);
+}
+
+
+.kamera-btn.kapat {
+
+    background-color: #d93025;
+}
+
+
+/* ============================= */
+/* TELEFON EKRANI */
+/* ============================= */
+
+@media (max-width: 500px) {
+
+    .uygulama-kapsayici {
+        padding: 10px;
+    }
+
+    .tablo-baslik,
+    .urun-satiri {
+
+        grid-template-columns:
+            1.8fr
+            0.9fr
+            65px
+            1fr
+            38px;
+
+        gap: 5px;
+    }
+
+    .tablo-baslik {
+        font-size: 10px;
+    }
+
+    .urun-satiri {
+        font-size: 12px;
+    }
+
+    .adet-input {
+        width: 60px;
+        font-size: 14px;
+    }
+
+    .toplam-alan {
+        font-size: 16px;
+    }
+
+    .kamera-btn {
+        padding: 10px 13px;
+        font-size: 12px;
+    }
+}
+
+</style>
+
 </head>
+
 <body>
 
-    <div class="uygulama-kapsayici">
-        
-        <!-- ÜST BÖLÜM: Logo ve Yeni Dinamik Google Tarzı Banner -->
-        <div class="ust-banner-alani">
-            <div class="logo">KasaRaf</div>
-            <div id="dinamik-reklam" class="dinamik-reklam-kutusu">
-                ✨ Yükleniyor...
-            </div>
-        </div>
-        
-        <!-- Keskinleştirilmiş Kamera Penceresi -->
-        <div id="kamera-kapsayici">
-            <video id="kamera-video" autoplay playsinline></video>
-            <div class="okuma-hedefi">
-                <div class="hedef-yazisi">Etiketi / Fiyatı Hizalayın</div>
-            </div>
-            <div id="durum-etiket" class="tarama-durumu">Yazı analiz ediliyor...</div>
-        </div>
+<div class="uygulama-kapsayici">
 
-        <!-- Sepet Listesi -->
-        <div class="sepet-listesi" id="sepet-listesi">
-            <p id="bos-mesaj" style="color: #70757a; text-align: center; margin-top: 40px;">Sepetiniz boş. Raftaki fiyat etiketini okutmak için kamerayı başlatın.</p>
-        </div>
+```
+<!-- ÜST BÖLÜM -->
 
-        <!-- Alt Kontrol Barı -->
-        <div class="alt-bar">
-            <div class="toplam-alan">Toplam: <span id="genel-toplam">0.00</span> TL</div>
-            <button class="kamera-btn" id="btn-kamera" onclick="kameraKontrol()">📸 Kamerayı Başlat</button>
-        </div>
+<div class="ust-banner-alani">
+
+    <div class="logo">
+        KasaRaf
     </div>
 
-    <!-- JAVASCRIPT KODLARI (Mutlaka script etiketleri içinde olmalı) -->
-    <script>
-        let akis = null;
-        let taramaAraligi = null;
-        let sepet = [];
-        let benzersizUrunId = 0;
+    <div
+        id="dinamik-reklam"
+        class="dinamik-reklam-kutusu">
 
-        // Dinamik Reklam Motoru
-        function dinamikKonseptGuncelle() {
-            const reklamKutusu = document.getElementById('dinamik-reklam');
-            const gunler = [
-                "🌿 Bugün Dünya Çevre Günü! Bez çanta kullanalım.",
-                "🛒 KasaRaf: Kasadan geçen ürün fiyatlarını ekrandan eşleştirin.",
-                "🍎 Anlaşmalı manav reyonlarında bugün %15 indirim var!"
-            ];
-            reklamKutusu.innerHTML = gunler[Math.floor(Math.random() * gunler.length)];
-        }
-        window.onload = dinamikKonseptGuncelle;
+        ✨ Akıllı alışveriş sisteminiz hazır.
 
-        // --- KAMERA KONTROLÜ ---
-        async function kameraKontrol() {
-            const video = document.getElementById('kamera-video');
-            const kapsayici = document.getElementById('kamera-kapsayici');
-            const btn = document.getElementById('btn-kamera');
-            const durum = document.getElementById('durum-etiket');
+    </div>
 
-            if (!akis) {
-                try {
-                    akis = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: 'environment' } 
+</div>
+
+
+
+<!-- KAMERA -->
+
+<div id="kamera-kapsayici">
+
+    <video
+        id="kamera-video"
+        autoplay
+        playsinline>
+    </video>
+
+
+    <div class="okuma-hedefi">
+
+        <div class="hedef-yazisi">
+            Ürün ve fiyat etiketini buraya hizalayın
+        </div>
+
+    </div>
+
+
+    <div
+        id="durum-etiket"
+        class="tarama-durumu">
+
+        Etiket aranıyor...
+
+    </div>
+
+</div>
+
+
+
+<!-- SEPET -->
+
+<div
+    class="sepet-listesi"
+    id="sepet-listesi">
+
+    <p
+        id="bos-mesaj"
+        style="
+            color:#70757a;
+            text-align:center;
+            margin-top:40px;
+        ">
+
+        Sepetiniz boş.
+
+        <br><br>
+
+        Raftaki ürün etiketini okutmak için
+        kamerayı başlatın.
+
+    </p>
+
+</div>
+
+
+
+<!-- ALT BAR -->
+
+<div class="alt-bar">
+
+    <div class="toplam-alan">
+
+        Toplam:
+
+        <span id="genel-toplam">
+            0.00
+        </span>
+
+        TL
+
+    </div>
+
+
+    <button
+        class="kamera-btn"
+        id="btn-kamera"
+        onclick="kameraKontrol()">
+
+        📸 Kamerayı Başlat
+
+    </button>
+
+</div>
+```
+
+</div>
+
+<script>
+
+
+/* ========================================= */
+/* DEĞİŞKENLER */
+/* ========================================= */
+
+
+let akis = null;
+
+let taramaAraligi = null;
+
+let sepet = [];
+
+let benzersizUrunId = 0;
+
+let okumaDevamEdiyor = false;
+
+let sonOkunanUrun = "";
+
+let sonOkumaZamani = 0;
+
+
+
+/* ========================================= */
+/* KAMERA KONTROL */
+/* ========================================= */
+
+
+async function kameraKontrol() {
+
+
+    const video =
+        document.getElementById(
+            "kamera-video"
+        );
+
+
+    const kapsayici =
+        document.getElementById(
+            "kamera-kapsayici"
+        );
+
+
+    const btn =
+        document.getElementById(
+            "btn-kamera"
+        );
+
+
+    const durum =
+        document.getElementById(
+            "durum-etiket"
+        );
+
+
+
+    /* KAMERA KAPALIYSA AÇ */
+
+    if (!akis) {
+
+
+        try {
+
+
+            akis =
+                await navigator
+                    .mediaDevices
+                    .getUserMedia({
+
+                        video: {
+                            facingMode:
+                                "environment"
+                        }
+
                     });
-                    video.srcObject = akis;
-                    kapsayici.style.display = 'block';
-                    btn.innerHTML = '🛑 Kamerayı Kapat';
-                    btn.classList.add('kapat');
-                    
-                    okumayiBaslat(video, durum);
-                    
-                } catch (hata) {
-                    alert("Kameraya erişilemedi!");
-                }
-            } else {
-                let trackler = akis.getTracks();
-                trackler.forEach(track => track.stop());
-                video.srcObject = null;
-                akis = null;
-                kapsayici.style.display = 'none';
-                btn.innerHTML = '📸 Kamerayı Başlat';
-                btn.classList.remove('kapat');
-                
-                clearInterval(taramaAraligi);
-                durum.style.display = 'none';
-            }
+
+
+            video.srcObject = akis;
+
+
+            kapsayici.style.display =
+                "block";
+
+
+            btn.innerHTML =
+                "🛑 Kamerayı Kapat";
+
+
+            btn.classList.add(
+                "kapat"
+            );
+
+
+            durum.style.display =
+                "block";
+
+
+            okumayiBaslat(
+                video,
+                durum
+            );
+
+
         }
 
-        // --- YAZI OKUMA (OCR) VE ÜRÜN AYIKLAMA ---
-        function okumayiBaslat(video, durum) {
-            durum.style.display = 'block';
-            durum.innerText = "Etiket aranıyor...";
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
 
-            taramaAraligi = setInterval(async () => {
-                if (!akis || video.readyState !== 4) return;
+        catch (hata) {
 
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                durum.innerText = "Yazı analiz ediliyor...";
+            console.error(
+                "Kamera hatası:",
+                hata
+            );
+
+
+            alert(
+                "Kameraya erişilemedi!"
+            );
+
+
+        }
+
+
+    }
+
+
+    /* KAMERA AÇIKSA KAPAT */
+
+    else {
+
+
+        const trackler =
+            akis.getTracks();
+
+
+        trackler.forEach(
+            track => track.stop()
+        );
+
+
+        video.srcObject = null;
+
+
+        akis = null;
+
+
+        kapsayici.style.display =
+            "none";
+
+
+        btn.innerHTML =
+            "📸 Kamerayı Başlat";
+
+
+        btn.classList.remove(
+            "kapat"
+        );
+
+
+        clearInterval(
+            taramaAraligi
+        );
+
+
+        taramaAraligi = null;
+
+
+        durum.style.display =
+            "none";
+
+
+        okumaDevamEdiyor =
+            false;
+
+
+    }
+
+
+}
+
+
+
+/* ========================================= */
+/* OCR OKUMA */
+/* ========================================= */
+
+
+function okumayiBaslat(
+    video,
+    durum
+) {
+
+
+    /* Önce eski taramayı temizle */
+
+    if (taramaAraligi) {
+
+        clearInterval(
+            taramaAraligi
+        );
+
+    }
+
+
+
+    durum.style.display =
+        "block";
+
+
+    durum.innerText =
+        "🔍 Etiket aranıyor...";
+
+
+
+    const canvas =
+        document.createElement(
+            "canvas"
+        );
+
+
+    const ctx =
+        canvas.getContext(
+            "2d"
+        );
+
+
+
+    taramaAraligi =
+        setInterval(
+
+            async () => {
+
+
+                /* Kamera kapalıysa */
+
+                if (
+                    !akis ||
+                    video.readyState !== 4
+                ) {
+
+                    return;
+
+                }
+
+
+
+                /* OCR hâlâ çalışıyorsa */
+
+                if (
+                    okumaDevamEdiyor
+                ) {
+
+                    return;
+
+                }
+
+
+
+                okumaDevamEdiyor =
+                    true;
+
+
 
                 try {
-                    const { data: { text } } = await Tesseract.recognize(canvas, 'tur');
-                    
-                    const fiyatRegex = /(\d+)[.,](\d{2})/;
-                    const eslesme = text.match(fiyatRegex);
+
+
+                    canvas.width =
+                        video.videoWidth;
+
+
+                    canvas.height =
+                        video.videoHeight;
+
+
+
+                    /* Kameradan görüntü al */
+
+                    ctx.drawImage(
+
+                        video,
+
+                        0,
+
+                        0,
+
+                        canvas.width,
+
+                        canvas.height
+
+                    );
+
+
+
+                    durum.innerText =
+                        "🔍 Etiket okunuyor...";
+
+
+
+                    const sonuc =
+                        await Tesseract.recognize(
+
+                            canvas,
+
+                            "tur",
+
+                            {
+
+                                logger: m => {
+
+                                    if (
+                                        m.status ===
+                                        "recognizing text"
+                                    ) {
+
+                                        durum.innerText =
+                                            "🔍 Yazı analiz ediliyor...";
+
+                                    }
+
+                                }
+
+                            }
+
+                        );
+
+
+
+                    const text =
+                        sonuc.data.text
+                            .trim();
+
+
+
+                    console.log(
+                        "OKUNAN YAZI:",
+                        text
+                    );
+
+
+
+                    if (
+                        text.length < 2
+                    ) {
+
+                        durum.innerText =
+                            "Etiket bulunamadı...";
+
+                        return;
+
+                    }
+
+
+
+                    /* ========================================= */
+                    /* FİYAT BUL */
+                    /* ========================================= */
+
+
+                    const fiyatRegex =
+                        /(\d{1,5})(?:[.,](\d{1,2}))?\s*(?:TL|₺)/i;
+
+
+
+                    let eslesme =
+                        text.match(
+                            fiyatRegex
+                        );
+
+
+
+                    /* TL yazmadan sadece 25,00 gibi yazılmışsa */
+
+                    if (!eslesme) {
+
+                        const ikinciRegex =
+                            /(\d{1,5})[.,](\d{2})/;
+
+
+                        eslesme =
+                            text.match(
+                                ikinciRegex
+                            );
+
+                    }
+
+
 
                     if (eslesme) {
-                        const fiyat = parseFloat(eslesme[1] + "." + eslesme[2]);
-                        
-                        let isim = text.replace(fiyatRegex, '').replace(/TL|₺/ig, '').trim();
-                        isim = isim.replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ ]/g, '').trim();
-                        
-                        if (isim.length < 3) isim = "Raf Ürünü";
 
-                        sepeteEkle(isim, fiyat);
-                        
-                        durum.innerText = "✅ Ürün Eklendi!";
-                        
-                        clearInterval(taramaAraligi);
-                        setTimeout(() => okumayiBaslat(video, durum), 4000);
-                    } else {
-                        durum.innerText = "Fiyat bulunamadı, hizalayın...";
+
+                        const tamKisim =
+                            eslesme[1];
+
+
+                        let ondalikKisim =
+                            eslesme[2] ||
+                            "00";
+
+
+
+                        if (
+                            ondalikKisim.length === 1
+                        ) {
+
+                            ondalikKisim +=
+                                "0";
+
+                        }
+
+
+
+                        const fiyat =
+                            parseFloat(
+
+                                tamKisim +
+                                "." +
+                                ondalikKisim
+
+                            );
+
+
+
+                        /* ========================================= */
+                        /* ÜRÜN ADINI AYIKLA */
+                        /* ========================================= */
+
+
+                        let isim =
+                            text
+                                .replace(
+                                    eslesme[0],
+                                    ""
+                                )
+                                .replace(
+                                    /TL/gi,
+                                    ""
+                                )
+                                .replace(
+                                    /₺/g,
+                                    ""
+                                )
+                                .replace(
+                                    /\n/g,
+                                    " "
+                                )
+                                .replace(
+                                    /\s+/g,
+                                    " "
+                                )
+                                .trim();
+
+
+
+                        /* Gereksiz karakterleri temizle */
+
+
+                        isim =
+                            isim.replace(
+
+                                /[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ\s\-]/g,
+
+                                ""
+
+                            )
+                            .trim();
+
+
+
+                        /* Ürün adı bulunamazsa */
+
+
+                        if (
+                            isim.length < 2
+                        ) {
+
+                            isim =
+                                "Raf Ürünü";
+
+                        }
+
+
+
+                        /* ========================================= */
+                        /* AYNI ETİKETİ TEKRAR EKLEMEYİ ENGELLE */
+                        /* ========================================= */
+
+
+                        const simdi =
+                            Date.now();
+
+
+
+                        const urunAnahtari =
+                            isim +
+                            "-" +
+                            fiyat;
+
+
+
+                        if (
+
+                            urunAnahtari !==
+                                sonOkunanUrun
+
+                            ||
+
+                            simdi -
+                            sonOkumaZamani
+                            >
+                            5000
+
+                        ) {
+
+
+                            sepeteEkle(
+                                isim,
+                                fiyat
+                            );
+
+
+
+                            sonOkunanUrun =
+                                urunAnahtari;
+
+
+
+                            sonOkumaZamani =
+                                simdi;
+
+
+
+                            durum.innerText =
+                                "✅ Ürün listeye eklendi!";
+
+
+
+                        }
+
+                        else {
+
+
+                            durum.innerText =
+                                "⏳ Aynı etiket bekleniyor...";
+
+
+                        }
+
+
+
                     }
-                } catch (hata) {
-                    console.log("Okuma hatası:", hata);
+
+
+                    else {
+
+
+                        durum.innerText =
+                            "❌ Fiyat bulunamadı. Etiketi hizalayın.";
+
+
+                    }
+
+
+
                 }
-            }, 3000);
-        }
 
-        // --- SEPET YÖNETİMİ ---
-        function sepeteEkle(isim, fiyat) {
-            const mevcutUrun = sepet.find(u => u.isim === isim && u.fiyat === fiyat);
-            
-            if (mevcutUrun) {
-                mevcutUrun.adet++; 
-            } else {
-                benzersizUrunId++;
-                sepet.push({ id: benzersizUrunId, isim: isim, fiyat: fiyat, adet: 1 });
-            }
-            sepetiGuncelle();
-        }
 
-        function sepetiGuncelle() {
-            const liste = document.getElementById('sepet-listesi');
-            const genelToplamAlan = document.getElementById('genel-toplam');
-            
-            if (sepet.length === 0) {
-                liste.innerHTML = '<p id="bos-mesaj" style="color: #70757a; text-align: center; margin-top: 40px;">Sepetiniz boş. Raftaki fiyat etiketini okutmak için kamerayı başlatın.</p>';
-                genelToplamAlan.innerText = '0.00';
-                return;
-            }
+                catch (hata) {
 
-            liste.innerHTML = '';
-            let genelToplam = 0;
 
-            sepet.forEach(urun => {
-                const satirToplam = urun.fiyat * urun.adet;
-                genelToplam += satirToplam;
+                    console.error(
+                        "OCR HATASI:",
+                        hata
+                    );
 
-                const kart = document.createElement('div');
-                kart.className = 'urun-karti';
-                
-                kart.innerHTML = `
-                    <div class="urun-sol">
-                        <div class="urun-adi">${urun.isim}</div>
-                        <div class="urun-fiyat">Birim: ${urun.fiyat.toFixed(2)} TL</div>
+
+                    durum.innerText =
+                        "⚠️ Okuma hatası.";
+
+
+                }
+
+
+                finally {
+
+
+                    okumaDevamEdiyor =
+                        false;
+
+
+                }
+
+
+            },
+
+
+            2500
+
+
+        );
+
+
+}
+
+
+
+/* ========================================= */
+/* SEPETE ÜRÜN EKLE */
+/* ========================================= */
+
+
+function sepeteEkle(
+    isim,
+    fiyat
+) {
+
+
+    const mevcutUrun =
+        sepet.find(
+
+            u =>
+                u.isim === isim &&
+                u.fiyat === fiyat
+
+        );
+
+
+
+    if (mevcutUrun) {
+
+
+        /* Aynı ürün tekrar okutulursa
+           adet otomatik artmasın */
+
+        console.log(
+            "Bu ürün zaten listede."
+        );
+
+
+    }
+
+
+    else {
+
+
+        benzersizUrunId++;
+
+
+        sepet.push({
+
+            id:
+                benzersizUrunId,
+
+            isim:
+                isim,
+
+            fiyat:
+                fiyat,
+
+            adet:
+                1
+
+        });
+
+
+    }
+
+
+
+    sepetiGuncelle();
+
+
+}
+
+
+
+/* ========================================= */
+/* SEPETİ TABLO OLARAK GÖSTER */
+/* ========================================= */
+
+
+function sepetiGuncelle() {
+
+
+    const liste =
+        document.getElementById(
+            "sepet-listesi"
+        );
+
+
+    const genelToplamAlan =
+        document.getElementById(
+            "genel-toplam"
+        );
+
+
+
+    /* SEPET BOŞSA */
+
+
+    if (
+        sepet.length === 0
+    ) {
+
+
+        liste.innerHTML = `
+
+            <p
+                style="
+                    color:#70757a;
+                    text-align:center;
+                    margin-top:40px;
+                "
+            >
+
+                Sepetiniz boş.
+
+                <br><br>
+
+                Raftaki ürün etiketini okutmak için
+                kamerayı başlatın.
+
+            </p>
+
+        `;
+
+
+
+        genelToplamAlan.innerText =
+            "0.00";
+
+
+        return;
+
+
+    }
+
+
+
+    let genelToplam =
+        0;
+
+
+
+    let html = `
+
+
+        <div class="tablo-baslik">
+
+            <div>
+                ÜRÜN
+            </div>
+
+            <div>
+                FİYAT
+            </div>
+
+            <div>
+                ADET
+            </div>
+
+            <div>
+                TOPLAM
+            </div>
+
+            <div>
+            </div>
+
+        </div>
+
+
+    `;
+
+
+
+    /* HER ÜRÜN İÇİN SATIR */
+
+
+    sepet.forEach(
+        urun => {
+
+
+            const satirToplam =
+                urun.fiyat *
+                urun.adet;
+
+
+
+            genelToplam +=
+                satirToplam;
+
+
+
+            html += `
+
+
+                <div class="urun-satiri">
+
+
+                    <!-- ÜRÜN -->
+
+                    <div
+                        class="tablo-urun-adi"
+                    >
+
+                        ${urun.isim}
+
                     </div>
-                    <div class="urun-sag">
-                        <div class="adet-kontrol">
-                            <button class="adet-btn" onclick="adetButonu(${urun.id}, -1)">-</button>
-                            <input type="number" class="adet-input" value="${urun.adet}" min="1" onchange="klavyeAdetGiris(event, ${urun.id})">
-                            <button class="adet-btn" onclick="adetButonu(${urun.id}, 1)">+</button>
-                        </div>
-                        <div class="satir-toplam">${satirToplam.toFixed(2)} TL</div>
-                        <button class="sil-btn" onclick="urunuSil(${urun.id})">🗑️</button>
+
+
+
+                    <!-- BİRİM FİYAT -->
+
+                    <div
+                        class="tablo-fiyat"
+                    >
+
+                        ${urun.fiyat.toFixed(2)}
+                        TL
+
                     </div>
-                `;
-                liste.appendChild(kart);
-            });
 
-            genelToplamAlan.innerText = genelToplam.toFixed(2);
-        }
 
-        // Adet artırma/azaltma butonları
-        function adetButonu(id, degisim) {
-            const urun = sepet.find(u => u.id === id);
-            if (urun) {
-                urun.adet += degisim;
-                if (urun.adet < 1) urun.adet = 1;
-                sepetiGuncelle();
-            }
-        }
 
-        // Klavyeden giriş
-        function klavyeAdetGiris(event, id) {
-            const urun = sepet.find(u => u.id === id);
-            if (urun) {
-                let yeniAdet = parseInt(event.target.value);
-                if (isNaN(yeniAdet) || yeniAdet < 1) yeniAdet = 1;
-                urun.adet = yeniAdet;
-                sepetiGuncelle();
-            }
-        }
+                    <!-- ADET -->
 
-        // Satırı siler
-        function urunuSil(id) {
-            sepet = sepet.filter(u => u.id !== id);
-            sepetiGuncelle();
+                    <div>
+
+                        <input
+
+                            type="number"
+
+                            class="adet-input"
+
+                            value="${urun.adet}"
+
+                            min="1"
+
+                            step="1"
+
+                            inputmode="numeric"
+
+                            oninput="
+                                klavyeAdetGiris(
+                                    event,
+                                    ${urun.id}
+                                )
+                            "
+
+                        >
+
+                    </div>
+
+
+
+                    <!-- SATIR TOPLAMI -->
+
+                    <div
+                        class="satir-toplam"
+                    >
+
+                        ${satirToplam.toFixed(2)}
+                        TL
+
+                    </div>
+
+
+
+                    <!-- SİL -->
+
+                    <div>
+
+                        <button
+
+                            class="sil-btn"
+
+                            onclick="
+                                urunuSil(
+                                    ${urun.id}
+                                )
+                            "
+
+                            title="Satırı Sil"
+
+                        >
+
+                            🗑️
+
+                        </button>
+
+                    </div>
+
+
+                </div>
+
+
+            `;
+
+
         }
-    </script>
+    );
+
+
+
+    liste.innerHTML =
+        html;
+
+
+
+    genelToplamAlan.innerText =
+        genelToplam.toFixed(2);
+
+
+}
+
+
+
+/* ========================================= */
+/* KLAVYEDEN ADET GİRİŞİ */
+/* ========================================= */
+
+
+function klavyeAdetGiris(
+    event,
+    id
+) {
+
+
+    const urun =
+        sepet.find(
+            u => u.id === id
+        );
+
+
+
+    if (!urun) return;
+
+
+
+    let yeniAdet =
+        parseInt(
+            event.target.value
+        );
+
+
+
+    /* Kullanıcı kutuyu boşaltırsa
+       hemen 1 yapma */
+
+    if (
+        event.target.value === ""
+    ) {
+
+        return;
+
+    }
+
+
+
+    if (
+        isNaN(yeniAdet) ||
+        yeniAdet < 1
+    ) {
+
+        yeniAdet =
+            1;
+
+    }
+
+
+
+    urun.adet =
+        yeniAdet;
+
+
+
+    sepetiGuncelle();
+
+
+}
+
+
+
+/* ========================================= */
+/* ÜRÜN SATIRINI SİL */
+/* ========================================= */
+
+
+function urunuSil(id) {
+
+
+    sepet =
+        sepet.filter(
+
+            u =>
+                u.id !== id
+
+        );
+
+
+
+    sepetiGuncelle();
+
+
+}
+
+
+/* ========================================= */
+/* SAYFA YÜKLENİNCE */
+/* ========================================= */
+
+
+window.onload =
+    function() {
+
+
+        console.log(
+            "KasaRaf hazır."
+        );
+
+
+    };
+
+
+</script>
+
 </body>
+
 </html>
