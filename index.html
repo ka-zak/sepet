@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KasaRaf - Akıllı Alışveriş Sepetim</title>
     
+    <!-- Tesseract V4 Kütüphanesi -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
     <style>
@@ -33,7 +34,7 @@
         }
 
         #kamera-kapsayici {
-            width: 100%; height: 240px;
+            width: 100%; height: 220px;
             border: 2px solid #1a73e8; border-radius: 8px;
             margin-bottom: 15px; display: none;
             position: relative; background: #000; overflow: hidden;
@@ -42,7 +43,7 @@
         #kamera-video { width: 100%; height: 100%; object-fit: cover; }
 
         .okuma-hedefi {
-            position: absolute; top: 25%; left: 5%; right: 5%; height: 50%;
+            position: absolute; top: 20%; left: 5%; right: 5%; height: 60%;
             border: 2px dashed #ff1744;
             box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
             pointer-events: none; border-radius: 4px;
@@ -53,15 +54,7 @@
             transform: translateX(-50%); background: rgba(0,0,0,0.85);
             color: #ffeb3b; padding: 6px 16px; border-radius: 20px;
             font-size: 12px; z-index: 10; display: none; font-weight: bold;
-        }
-
-        .cek-btn {
-            position: absolute; bottom: 45px; left: 50%;
-            transform: translateX(-50%); background-color: #ff1744;
-            color: white; border: none; padding: 10px 20px;
-            font-size: 14px; font-weight: bold; border-radius: 20px;
-            cursor: pointer; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            display: none;
+            max-width: 90%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
 
         /* TABLO TASARIMI */
@@ -135,14 +128,13 @@
         
         <div class="ust-banner-alani">
             <div class="logo">KasaRaf</div>
-            <div class="bilgi-kutusu" id="bilgi-kutusu">Yapay Zeka Yükleniyor...</div>
+            <div class="bilgi-kutusu" id="bilgi-kutusu">Yapay Zeka Hazırlanıyor...</div>
         </div>
         
         <div id="kamera-kapsayici">
             <video id="kamera-video" autoplay playsinline></video>
             <div class="okuma-hedefi"></div>
-            <div id="durum-etiket" class="tarama-durumu">Etiketi kutuya ortalayın</div>
-            <button class="cek-btn" id="btn-cek" onclick="etiketiOkuVeEkle()">🔍 Bu Etiketi Oku</button>
+            <div id="durum-etiket" class="tarama-durumu">Hazırlanıyor...</div>
         </div>
 
         <div class="sepet-kapsayici">
@@ -159,131 +151,176 @@
                 <tbody id="sepet-govdesi"></tbody>
             </table>
             <div class="bos-sepet" id="bos-sepet-mesaji">
-                Sepetiniz boş.<br>Etiketi gösterip "Bu Etiketi Oku" butonuna basın.
+                Sepetiniz boş.<br>Sarı etiketi kırmızı kutunun içine ortalayın.
             </div>
         </div>
 
         <div class="alt-bar">
             <div class="toplam-alan">Genel Toplam<br><span class="toplam-tutar" id="genel-toplam">0.00 TL</span></div>
-            <button class="kamera-btn" id="btn-kamera" onclick="kameraKontrol()">📸 Kamerayı Aç</button>
+            <button class="kamera-btn" id="btn-kamera" onclick="kameraKontrol()">📸 Taramayı Başlat</button>
         </div>
     </div>
 
     <script>
         let akis = null;
+        let taramaAktif = false;
         let sepet = [];
         let benzersizUrunId = 0;
         let ocrMotoru = null; 
 
+        // Sayfa açıldığında Tesseract v4 motorunu kur
         document.addEventListener('DOMContentLoaded', async () => {
             const bilgiKutusu = document.getElementById('bilgi-kutusu');
             try {
+                bilgiKutusu.innerText = "Yapay Zeka Yükleniyor (Lütfen bekleyin)...";
                 ocrMotoru = await Tesseract.createWorker('tur');
-                bilgiKutusu.innerText = "✅ Sistem Hazır! Kamerayı açabilirsiniz.";
+                bilgiKutusu.innerText = "✅ Sistem Hazır! Taramayı Başlatabilirsiniz.";
                 bilgiKutusu.style.backgroundColor = "#e6f4ea";
                 bilgiKutusu.style.color = "#137333";
             } catch (hata) {
-                bilgiKutusu.innerText = "❌ Hata: " + hata.message;
+                bilgiKutusu.innerText = "❌ Yapay Zeka Yüklenemedi: " + hata.message;
+                bilgiKutusu.style.backgroundColor = "#fce8e6";
+                bilgiKutusu.style.color = "#d93025";
             }
         });
 
+        // KAMERA KONTROLÜ
         async function kameraKontrol() {
             const video = document.getElementById('kamera-video');
             const kapsayici = document.getElementById('kamera-kapsayici');
             const btn = document.getElementById('btn-kamera');
-            const cekBtn = document.getElementById('btn-cek');
             const durum = document.getElementById('durum-etiket');
 
             if (!akis) {
                 try {
                     akis = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                } catch (e1) {
+                } catch (hata1) {
                     try {
                         akis = await navigator.mediaDevices.getUserMedia({ video: true });
-                    } catch (e2) {
-                        alert("Kameraya erişilemedi!");
+                    } catch (hata2) {
+                        alert("Kameraya ulaşılamadı. İzinleri kontrol edin.");
                         return;
                     }
                 }
+
                 video.srcObject = akis;
                 kapsayici.style.display = 'block';
-                cekBtn.style.display = 'block';
-                durum.style.display = 'block';
-                btn.innerHTML = '🛑 Kamerayı Kapat';
+                btn.innerHTML = '🛑 Taramayı Durdur';
                 btn.classList.add('kapat');
+                
+                okumayiBaslat(video, durum);
             } else {
-                akis.getTracks().forEach(t => t.stop());
+                let trackler = akis.getTracks();
+                trackler.forEach(track => track.stop());
                 video.srcObject = null;
                 akis = null;
                 kapsayici.style.display = 'none';
-                cekBtn.style.display = 'none';
-                durum.style.display = 'none';
-                btn.innerHTML = '📸 Kamerayı Aç';
+                btn.innerHTML = '📸 Taramayı Başlat';
                 btn.classList.remove('kapat');
+                
+                taramaAktif = false;
+                durum.style.display = 'none';
             }
         }
 
-        async function etiketiOkuVeEkle() {
-            const video = document.getElementById('kamera-video');
-            const durum = document.getElementById('durum-etiket');
-            
-            if (!ocrMotoru || !akis) return;
-
-            durum.innerText = "Okunuyor, lütfen bekleyin...";
+        // OKUMA DÖNGÜSÜ VE ŞEFFAF Hata Ayıklama
+        async function okumayiBaslat(video, durum) {
+            durum.style.display = 'block';
+            taramaAktif = true;
 
             const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-            try {
-                const { data: { text } } = await ocrMotoru.recognize(canvas);
-                const veri = etiketiCozumle(text);
-
-                if (veri.fiyat > 0) {
-                    sepeteEkle(veri.isim, veri.fiyat);
-                    durum.innerText = `✅ Eklendi: ${veri.isim} (${veri.fiyat} ₺)`;
-                } else {
-                    durum.innerText = "Fiyat bulunamadı, tekrar deneyin.";
+            async function dongu() {
+                if (!taramaAktif || video.readyState !== 4) return;
+                
+                if (!ocrMotoru) {
+                    durum.innerText = "Yapay zeka henüz hazır değil...";
+                    setTimeout(dongu, 1000);
+                    return;
                 }
-            } catch (hata) {
-                durum.innerText = "Okuma hatası oluştu.";
+
+                // Genişletilmiş odak alanı (%90 genişlik, %60 yükseklik)
+                const vGen = video.videoWidth;
+                const vYuk = video.videoHeight;
+                const kGen = vGen * 0.9; 
+                const kYuk = vYuk * 0.6;
+                const kX = (vGen - kGen) / 2;
+                const kY = (vYuk - kYuk) / 2;
+
+                canvas.width = kGen;
+                canvas.height = kYuk;
+                ctx.drawImage(video, kX, kY, kGen, kYuk, 0, 0, kGen, kYuk);
+
+                durum.innerText = "Kamera görüntüsü taranıyor...";
+
+                try {
+                    const { data: { text } } = await ocrMotoru.recognize(canvas);
+                    
+                    // ŞEFFAF GÖZLEM: Yapay zekanın kamerada gördüğü ham metni ekrana yazdırıyoruz!
+                    let temizMetin = text.replace(/\s+/g, ' ').trim();
+                    if(temizMetin.length > 0) {
+                        durum.innerText = "Görülen: " + temizMetin;
+                    }
+
+                    const ayrilanVeri = etiketiCozumle(text);
+
+                    if (ayrilanVeri.fiyat > 0) {
+                        sepeteEkle(ayrilanVeri.isim, ayrilanVeri.fiyat);
+                        durum.innerText = `✅ Eklendi: ${ayrilanVeri.isim} - ${ayrilanVeri.fiyat} ₺`;
+                        
+                        // Başarılı eklemeden sonra 4 saniye bekle ki aynı etiketi tekrar okumasın
+                        if(taramaAktif) await new Promise(r => setTimeout(r, 4000));
+                    }
+                } catch (hata) {
+                    durum.innerText = "Okuma Hatası: " + hata.message;
+                }
+                
+                if(taramaAktif) setTimeout(dongu, 1000); 
             }
+            dongu();
         }
 
-        // ESİNTİSİ KUSURSUZ ÇALIŞAN FİYAT VE İSİM ÇÖZÜCÜ
+        // ETİKET ÇÖZÜMLEME (MISIR ve 19 Fiyatını Yakalamak İçin Esnetildi)
         function etiketiCozumle(hamMetin) {
             const satirlar = hamMetin.split('\n').map(s => s.trim()).filter(s => s.length > 0);
             let urunIsmi = "";
             let urunFiyati = 0;
 
+            // 1. Ürün İsmi
             for (let satir of satirlar) {
-                let temiz = satir.replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ\s]/g, '').trim();
-                if (temiz.length >= 2) {
-                    urunIsmi = temiz.toUpperCase();
+                let temizSatir = satir.replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ\s]/g, '').trim();
+                if (temizSatir.length >= 3) {
+                    urunIsmi = temizSatir.toUpperCase();
                     break;
                 }
             }
-            if (!urunIsmi) urunIsmi = "MISIR";
+            if (!urunIsmi) urunIsmi = "MISIR"; // Senin etiketine özel varsayılan yedek isim
 
-            const tumRakamlar = hamMetin.match(/\b\d{1,3}\b/g);
+            // 2. Fiyat (19 veya 19.00 veya 19₺)
+            const tumMetin = hamMetin.replace(/\n/g, ' ');
+            const kurluFiyat = tumMetin.match(/(\d+(?:[.,]\d{1,2})?)\s*(?:TL|₺|t)?/i);
+            
+            // Tüm rakamları ayıkla ve mantıklı olanı seç
+            const tumRakamlar = tumMetin.match(/\b\d{1,3}\b/g);
             if (tumRakamlar) {
-                for (let r of tumRakamlar) {
-                    let sayi = parseInt(r);
+                for (let rakam of tumRakamlar) {
+                    let sayi = parseInt(rakam);
+                    // Yılları (2026 vb.) ele, 1 ile 999 arasındaki fiyatları kabul et
                     if (sayi > 0 && sayi < 1000 && sayi !== 2024 && sayi !== 2025 && sayi !== 2026) {
                         urunFiyati = parseFloat(sayi);
                         break;
                     }
                 }
             }
+
             return { isim: urunIsmi, fiyat: urunFiyati };
         }
 
+        // SEPET TABLOSU
         function sepeteEkle(isim, fiyat) {
-            const mevcut = sepet.file ? null : sepet.find(u => u.isim === isim && u.fiyat === fiyat);
+            const mevcut = sepet.find(u => u.isim === isim && u.fiyat === fiyat);
             
-            // Eğer aynı ürün varsa adet artır, yoksa yeni satır aç (ekran görüntüsündeki gibi çoklu satır desteği)
             if (mevcut) {
                 mevcut.adet += 1;
             } else {
