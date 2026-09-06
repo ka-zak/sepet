@@ -252,27 +252,22 @@
             }
         }
 
-        // İSİM VE FİYAT TEMİZLEME MOTORU
         function etiketiCozumle(hamMetin) {
             const satirlar = hamMetin.split('\n').map(s => s.trim()).filter(s => s.length > 0);
             let urunIsmi = "";
             let urunFiyati = 0;
 
-            // Ürün adı tespiti (Garip OCR karakterlerini filtrele, en az 3 harfli düzgün kelime ara)
             for (let satir of satirlar) {
                 let temiz = satir.replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ\s]/g, '').trim();
-                if (temiz.length >= 3 && !temiz.toLowerCase().includes('adet') && !temiz.toLowerCase().includes('tarih')) {
+                if (temiz.length >= 2) {
                     urunIsmi = temiz.toUpperCase();
                     break;
                 }
             }
-            // Eğer okunamazsa veya çok bozulduysa etiket türüne göre varsayılan temiz isim ata
-            if (!urunIsmi || urunIsmi.length < 3 || urunIsmi.includes('GJ') || urunIsmi.includes('GR')) {
-                urunIsmi = "MISIR"; 
-            }
+            if (!urunIsmi) urunIsmi = "RAF ÜRÜNÜ";
 
-            // Fiyat tespiti
-            const tumRakamlar = hamMetin.match(/\b\d{1,3}\b/g);
+            // Fiyat Tespiti (Örn: 19 veya 19.00)
+            const tumRakamlar = hamMetin.match(/\b\d{1,4}\b/g);
             if (tumRakamlar) {
                 for (let r of tumRakamlar) {
                     let sayi = parseInt(r);
@@ -285,14 +280,10 @@
             return { isim: urunIsmi, fiyat: urunFiyati };
         }
 
+        // HER TARAMADA YENİ VE BAĞIMSIZ SATIR AÇAR
         function sepeteEkle(isim, fiyat) {
-            const mevcut = sepet.find(u => u.isim === isim && u.fiyat === fiyat);
-            if (mevcut) {
-                mevcut.adet += 1;
-            } else {
-                benzersizUrunId++;
-                sepet.push({ id: benzersizUrunId, isim: isim, fiyat: fiyat, adet: 1 });
-            }
+            benzersizUrunId++;
+            sepet.push({ id: benzersizUrunId, isim: isim, fiyat: fiyat, adet: 1 });
             tabloyuCiz();
         }
 
