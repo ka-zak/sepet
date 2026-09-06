@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KasaRaf - Akıllı Alışveriş Sepetim</title>
     
-    <!-- Tesseract.js Çevrimdışı/Tarayıcı İçi OCR Kütüphanesi -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
     <style>
         body {
@@ -31,54 +30,53 @@
         .bilgi-kutusu {
             background-color: #e8f0fe; color: #1a73e8;
             padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 500;
-            transition: all 0.3s;
         }
 
-        /* Kamera Alanı */
         #kamera-kapsayici {
-            width: 100%; height: 220px;
+            width: 100%; height: 240px;
             border: 2px solid #1a73e8; border-radius: 8px;
             margin-bottom: 15px; display: none;
             position: relative; background: #000; overflow: hidden;
         }
 
-        #kamera-video {
-            width: 100%; height: 100%; object-fit: cover;
-        }
+        #kamera-video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* Etikete Uygun Odak Kutusu */
         .okuma-hedefi {
-            position: absolute; top: 30%; left: 10%; right: 10%; height: 40%;
+            position: absolute; top: 25%; left: 5%; right: 5%; height: 50%;
             border: 2px dashed #ff1744;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
             pointer-events: none; border-radius: 4px;
         }
 
         .tarama-durumu {
             position: absolute; bottom: 10px; left: 50%;
-            transform: translateX(-50%); background: rgba(0,0,0,0.8);
-            color: white; padding: 6px 16px; border-radius: 20px;
+            transform: translateX(-50%); background: rgba(0,0,0,0.85);
+            color: #ffeb3b; padding: 6px 16px; border-radius: 20px;
             font-size: 12px; z-index: 10; display: none; font-weight: bold;
-            white-space: nowrap;
         }
 
-        /* KASA TİPİ TABLO TASARIMI */
+        .cek-btn {
+            position: absolute; bottom: 45px; left: 50%;
+            transform: translateX(-50%); background-color: #ff1744;
+            color: white; border: none; padding: 10px 20px;
+            font-size: 14px; font-weight: bold; border-radius: 20px;
+            cursor: pointer; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            display: none;
+        }
+
+        /* TABLO TASARIMI */
         .sepet-kapsayici {
             flex: 1; overflow-y: auto;
             border: 1px solid #dadce0; border-radius: 8px;
             background-color: #ffffff;
         }
 
-        .kasa-tablosu {
-            width: 100%; border-collapse: collapse; text-align: left;
-        }
-
+        .kasa-tablosu { width: 100%; border-collapse: collapse; text-align: left; }
         .kasa-tablosu thead th {
             background-color: #f8f9fa; color: #5f6368;
             font-size: 12px; padding: 10px 8px;
             border-bottom: 2px solid #dadce0; position: sticky; top: 0;
         }
-
         .kasa-tablosu tbody td {
             padding: 10px 8px; border-bottom: 1px solid #eee;
             vertical-align: middle; font-size: 14px; color: #202124;
@@ -90,19 +88,15 @@
         .td-toplam { font-weight: bold; color: #1a73e8; width: 20%; }
         .td-sil { width: 10%; text-align: center; }
 
-        /* Adet Kontrol Butonları ve İnput */
         .adet-kutusu {
             display: inline-flex; align-items: center;
             border: 1px solid #dadce0; border-radius: 4px; overflow: hidden;
         }
-        
         .adet-btn {
             background: #f1f3f4; border: none; width: 26px; height: 26px;
             cursor: pointer; font-weight: bold; font-size: 14px;
             display: flex; align-items: center; justify-content: center;
         }
-        .adet-btn:active { background: #e8eaed; }
-
         .adet-input {
             width: 35px; height: 24px; text-align: center; border: none;
             border-left: 1px solid #dadce0; border-right: 1px solid #dadce0;
@@ -118,17 +112,13 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        .bos-sepet {
-            text-align: center; padding: 40px 20px; color: #70757a; font-size: 14px;
-        }
+        .bos-sepet { text-align: center; padding: 40px 20px; color: #70757a; font-size: 14px; }
 
-        /* Alt Toplam Barı */
         .alt-bar {
             display: flex; justify-content: space-between; align-items: center;
             padding: 15px 0 5px 0; border-top: 2px solid #dadce0;
             background-color: #ffffff; margin-top: 10px;
         }
-
         .toplam-tutar { font-size: 22px; font-weight: bold; color: #d93025; }
         
         .kamera-btn {
@@ -148,14 +138,13 @@
             <div class="bilgi-kutusu" id="bilgi-kutusu">Yapay Zeka Yükleniyor...</div>
         </div>
         
-        <!-- Kamera Penceresi -->
         <div id="kamera-kapsayici">
             <video id="kamera-video" autoplay playsinline></video>
             <div class="okuma-hedefi"></div>
-            <div id="durum-etiket" class="tarama-durumu">Kamera açılıyor...</div>
+            <div id="durum-etiket" class="tarama-durumu">Etiketi kutuya ortalayın</div>
+            <button class="cek-btn" id="btn-cek" onclick="etiketiOkuVeEkle()">🔍 Bu Etiketi Oku</button>
         </div>
 
-        <!-- Kasa Tipi Tablo (Sepet) -->
         <div class="sepet-kapsayici">
             <table class="kasa-tablosu" id="kasa-tablosu" style="display: none;">
                 <thead>
@@ -167,204 +156,134 @@
                         <th>İşlem</th>
                     </tr>
                 </thead>
-                <tbody id="sepet-govdesi">
-                    <!-- Ürünler buraya eklenecek -->
-                </tbody>
+                <tbody id="sepet-govdesi"></tbody>
             </table>
             <div class="bos-sepet" id="bos-sepet-mesaji">
-                Sepetiniz boş.<br>Sarı etiketi kırmızı kutunun içine ortalayın.
+                Sepetiniz boş.<br>Etiketi gösterip "Bu Etiketi Oku" butonuna basın.
             </div>
         </div>
 
-        <!-- Alt Toplam Barı -->
         <div class="alt-bar">
             <div class="toplam-alan">Genel Toplam<br><span class="toplam-tutar" id="genel-toplam">0.00 TL</span></div>
-            <button class="kamera-btn" id="btn-kamera" onclick="kameraKontrol()">📸 Taramayı Başlat</button>
+            <button class="kamera-btn" id="btn-kamera" onclick="kameraKontrol()">📸 Kamerayı Aç</button>
         </div>
     </div>
 
     <script>
         let akis = null;
-        let taramaAktif = false;
         let sepet = [];
         let benzersizUrunId = 0;
         let ocrMotoru = null; 
 
-        // Sayfa yüklendiğinde Yapay Zekayı arka planda indir
-        window.onload = async () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const bilgiKutusu = document.getElementById('bilgi-kutusu');
             try {
-                ocrMotoru = await Tesseract.createWorker({
-                    logger: m => {
-                        if(m.status === 'downloading data') {
-                            bilgiKutusu.innerText = `Dil Paketi İniyor: %${Math.round(m.progress * 100)}`;
-                        } else if(m.status === 'initializing api') {
-                            bilgiKutusu.innerText = "Motor Hazırlanıyor...";
-                        }
-                    }
-                });
-                await ocrMotoru.loadLanguage('tur');
-                await ocrMotoru.initialize('tur');
-                bilgiKutusu.innerText = "✅ Sistem Hazır! Etiket okutabilirsiniz.";
+                ocrMotoru = await Tesseract.createWorker('tur');
+                bilgiKutusu.innerText = "✅ Sistem Hazır! Kamerayı açabilirsiniz.";
                 bilgiKutusu.style.backgroundColor = "#e6f4ea";
                 bilgiKutusu.style.color = "#137333";
             } catch (hata) {
-                bilgiKutusu.innerText = "❌ AI Yüklenemedi! İnterneti kontrol edin.";
-                bilgiKutusu.style.backgroundColor = "#fce8e6";
-                bilgiKutusu.style.color = "#d93025";
-                console.error("OCR Hatası:", hata);
+                bilgiKutusu.innerText = "❌ Hata: " + hata.message;
             }
-        };
+        });
 
-        // --- BİLGİSAYAR & TELEFON UYUMLU KAMERA YÖNETİMİ ---
         async function kameraKontrol() {
             const video = document.getElementById('kamera-video');
             const kapsayici = document.getElementById('kamera-kapsayici');
             const btn = document.getElementById('btn-kamera');
+            const cekBtn = document.getElementById('btn-cek');
             const durum = document.getElementById('durum-etiket');
 
             if (!akis) {
                 try {
-                    // 1. Önce telefonlar için arka kamerayı açmayı dene
                     akis = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                } catch (hata1) {
+                } catch (e1) {
                     try {
-                        // 2. Arka kamera yoksa (Bilgisayarlar) varsayılan kamerayı aç
                         akis = await navigator.mediaDevices.getUserMedia({ video: true });
-                    } catch (hata2) {
-                        alert("Kameraya ulaşılamadı. Lütfen adres çubuğundaki kamera simgesinden izin verin.");
+                    } catch (e2) {
+                        alert("Kameraya erişilemedi!");
                         return;
                     }
                 }
-
-                // Kamera başarıyla açıldıysa arayüzü güncelle
                 video.srcObject = akis;
                 kapsayici.style.display = 'block';
-                btn.innerHTML = '🛑 Taramayı Durdur';
+                cekBtn.style.display = 'block';
+                durum.style.display = 'block';
+                btn.innerHTML = '🛑 Kamerayı Kapat';
                 btn.classList.add('kapat');
-                
-                // Kamerayı AI hazır olmadan da açmasına izin veriyoruz (bekleme yapmaz)
-                okumayiBaslat(video, durum);
             } else {
-                // Kamerayı Kapat
-                let trackler = akis.getTracks();
-                trackler.forEach(track => track.stop());
+                akis.getTracks().forEach(t => t.stop());
                 video.srcObject = null;
                 akis = null;
                 kapsayici.style.display = 'none';
-                btn.innerHTML = '📸 Taramayı Başlat';
-                btn.classList.remove('kapat');
-                
-                taramaAktif = false;
+                cekBtn.style.display = 'none';
                 durum.style.display = 'none';
+                btn.innerHTML = '📸 Kamerayı Aç';
+                btn.classList.remove('kapat');
             }
         }
 
-        // --- GÖRÜNTÜ İŞLEME VE METİN AYRIŞTIRMA ---
-        async function okumayiBaslat(video, durum) {
-            durum.style.display = 'block';
-            taramaAktif = true;
+        async function etiketiOkuVeEkle() {
+            const video = document.getElementById('kamera-video');
+            const durum = document.getElementById('durum-etiket');
+            
+            if (!ocrMotoru || !akis) return;
+
+            durum.innerText = "Okunuyor, lütfen bekleyin...";
 
             const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            async function dongu() {
-                if (!taramaAktif || video.readyState !== 4) return;
-                
-                // Eğer kullanıcı kamerayı açtı ama Yapay Zeka daha inmediyse bekle
-                if (!ocrMotoru) {
-                    durum.innerText = "Yapay zeka bekleniyor...";
-                    setTimeout(dongu, 1000);
-                    return;
+            try {
+                const { data: { text } } = await ocrMotoru.recognize(canvas);
+                const veri = etiketiCozumle(text);
+
+                if (veri.fiyat > 0) {
+                    sepeteEkle(veri.isim, veri.fiyat);
+                    durum.innerText = `✅ Eklendi: ${veri.isim} (${veri.fiyat} ₺)`;
+                } else {
+                    durum.innerText = "Fiyat bulunamadı, tekrar deneyin.";
                 }
-
-                // Kırmızı kutunun (ortanın) koordinatlarını hesapla ve kırp
-                const vGen = video.videoWidth;
-                const vYuk = video.videoHeight;
-                const kGen = vGen * 0.8; 
-                const kYuk = vYuk * 0.4;
-                const kX = (vGen - kGen) / 2;
-                const kY = (vYuk - kYuk) / 2;
-
-                canvas.width = kGen;
-                canvas.height = kYuk;
-                ctx.drawImage(video, kX, kY, kGen, kYuk, 0, 0, kGen, kYuk);
-
-                durum.innerText = "Etiket inceleniyor...";
-
-                try {
-                    const { data: { text } } = await ocrMotoru.recognize(canvas);
-                    const ayrilanVeri = etiketiCozumle(text);
-
-                    if (ayrilanVeri.fiyat > 0) {
-                        sepeteEkle(ayrilanVeri.isim, ayrilanVeri.fiyat);
-                        durum.innerText = `✅ Bulundu: ${ayrilanVeri.isim} - ${ayrilanVeri.fiyat} ₺`;
-                        
-                        if(taramaAktif) setTimeout(dongu, 3000); // Üst üste okumasın diye mola
-                        return;
-                    } else {
-                        durum.innerText = "Fiyatı kırmızı kutuya ortalayın...";
-                    }
-                } catch (hata) { }
-                
-                if(taramaAktif) setTimeout(dongu, 500); // Bulamazsa 0.5 saniye sonra tekrar çek
+            } catch (hata) {
+                durum.innerText = "Okuma hatası oluştu.";
             }
-            dongu();
         }
 
-        // --- SARU ETİKET (MISIR 19₺) İÇİN ÖZEL ALGORİTMA ---
         function etiketiCozumle(hamMetin) {
             const satirlar = hamMetin.split('\n').map(s => s.trim()).filter(s => s.length > 0);
             let urunIsmi = "";
             let urunFiyati = 0;
 
-            // 1. Ürün Adı: Tamamen büyük harf olanı al
             for (let satir of satirlar) {
-                let temizSatir = satir.replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ\s]/g, '').trim();
-                if (temizSatir.length >= 3 && temizSatir === temizSatir.toUpperCase()) {
-                    urunIsmi = temizSatir;
+                let temiz = satir.replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ\s]/g, '').trim();
+                if (temiz.length >= 2) {
+                    urunIsmi = temiz.toUpperCase();
                     break;
                 }
             }
-            if (!urunIsmi && satirlar.length > 0) urunIsmi = satirlar[0].replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ\s]/g, '').trim();
-            if (!urunIsmi || urunIsmi.length < 2) urunIsmi = "Tanımsız Ürün";
+            if (!urunIsmi) urunIsmi = "RAF ÜRÜNÜ";
 
-            // 2. Fiyat Okuma
-            const tumMetin = hamMetin.replace(/\n/g, ' ');
-            
-            const kurluFiyat = tumMetin.match(/(\d+(?:[.,]\d{1,2})?)\s*(?:TL|₺|t)/i);
-            if (kurluFiyat) {
-                urunFiyati = parseFloat(kurluFiyat[1].replace(',', '.'));
-            } 
-            else if (tumMetin.match(/\b(\d{1,4})[.,](\d{2})\b/)) {
-                const mac = tumMetin.match(/\b(\d{1,4})[.,](\d{2})\b/);
-                urunFiyati = parseFloat(mac[1] + "." + mac[2]);
-            } 
-            else {
-                // Sadece düz "19" yazıyorsa barkod ve yılları eleyip al
-                const tumRakamlar = tumMetin.match(/\b\d{1,4}\b/g);
-                if (tumRakamlar) {
-                    const mantikliFiyatlar = tumRakamlar.filter(r => {
-                        let sayi = parseInt(r);
-                        return sayi > 0 && sayi < 1000 && sayi !== 2024 && sayi !== 2025 && sayi !== 2026;
-                    });
-                    if (mantikliFiyatlar.length > 0) urunFiyati = parseFloat(mantikliFiyatlar[0]);
+            // Fiyat Tespiti (Örn: 19 veya 19.00)
+            const tumRakamlar = hamMetin.match(/\b\d{1,4}\b/g);
+            if (tumRakamlar) {
+                for (let r of tumRakamlar) {
+                    let sayi = parseInt(r);
+                    if (sayi > 0 && sayi < 1000 && sayi !== 2024 && sayi !== 2025 && sayi !== 2026) {
+                        urunFiyati = parseFloat(sayi);
+                        break;
+                    }
                 }
             }
-
             return { isim: urunIsmi, fiyat: urunFiyati };
         }
 
-        // --- SEPET TABLOSU (KASA GÖRÜNÜMÜ) ---
+        // HER TARAMADA YENİ VE BAĞIMSIZ SATIR AÇAR
         function sepeteEkle(isim, fiyat) {
-            const mevcut = sepet.find(u => u.isim === isim && u.fiyat === fiyat);
-            
-            if (mevcut) {
-                mevcut.adet += 1;
-            } else {
-                benzersizUrunId++;
-                sepet.push({ id: benzersizUrunId, isim: isim, fiyat: fiyat, adet: 1 });
-            }
+            benzersizUrunId++;
+            sepet.push({ id: benzersizUrunId, isim: isim, fiyat: fiyat, adet: 1 });
             tabloyuCiz();
         }
 
