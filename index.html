@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KasaRaf - Akıllı Alışveriş Sepetim</title>
     
-    <!-- VS Code Live Server ile %100 Uyumlu Stabil Tesseract V4 -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <!-- Tesseract.js Çevrimdışı/Tarayıcı İçi OCR Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
     <style>
         body {
@@ -145,7 +145,7 @@
         
         <div class="ust-banner-alani">
             <div class="logo">KasaRaf</div>
-            <div class="bilgi-kutusu" id="bilgi-kutusu">Yapay Zeka Hazırlanıyor... Lütfen Bekleyin.</div>
+            <div class="bilgi-kutusu" id="bilgi-kutusu">Yapay Zeka Yükleniyor...</div>
         </div>
         
         <!-- Kamera Penceresi -->
@@ -190,36 +190,31 @@
         let benzersizUrunId = 0;
         let ocrMotoru = null; 
 
-        // Sayfa Yüklendiğinde Stabil Tesseract V4'ü Başlat
-        document.addEventListener('DOMContentLoaded', async () => {
+        // Sayfa yüklendiğinde Yapay Zekayı arka planda indir
+        window.onload = async () => {
             const bilgiKutusu = document.getElementById('bilgi-kutusu');
             try {
-                // V4 Sözdizimi - Live Server için çok daha güvenlidir.
-                ocrMotoru = Tesseract.createWorker({
+                ocrMotoru = await Tesseract.createWorker({
                     logger: m => {
-                        console.log(m); // Geliştirici konsolunda aşamaları görebilirsin
-                        if (m.status === 'downloading data') {
+                        if(m.status === 'downloading data') {
                             bilgiKutusu.innerText = `Dil Paketi İniyor: %${Math.round(m.progress * 100)}`;
-                        } else if (m.status === 'initializing api' || m.status === 'loading tesseract core') {
-                            bilgiKutusu.innerText = `Motor Hazırlanıyor...`;
+                        } else if(m.status === 'initializing api') {
+                            bilgiKutusu.innerText = "Motor Hazırlanıyor...";
                         }
                     }
                 });
-
-                await ocrMotoru.load();
                 await ocrMotoru.loadLanguage('tur');
                 await ocrMotoru.initialize('tur');
-                
-                bilgiKutusu.innerText = "✅ Sistem Hazır! Taramayı Başlatabilirsiniz.";
+                bilgiKutusu.innerText = "✅ Sistem Hazır! Etiket okutabilirsiniz.";
                 bilgiKutusu.style.backgroundColor = "#e6f4ea";
                 bilgiKutusu.style.color = "#137333";
             } catch (hata) {
-                bilgiKutusu.innerText = "❌ Yapay Zeka Yüklenemedi! (Konsolu Kontrol Edin)";
+                bilgiKutusu.innerText = "❌ AI Yüklenemedi! İnterneti kontrol edin.";
                 bilgiKutusu.style.backgroundColor = "#fce8e6";
                 bilgiKutusu.style.color = "#d93025";
-                console.error("OCR Başlatma Hatası:", hata);
+                console.error("OCR Hatası:", hata);
             }
-        });
+        };
 
         // --- BİLGİSAYAR & TELEFON UYUMLU KAMERA YÖNETİMİ ---
         async function kameraKontrol() {
@@ -230,25 +225,28 @@
 
             if (!akis) {
                 try {
-                    // Önce arka kamerayı dene
+                    // 1. Önce telefonlar için arka kamerayı açmayı dene
                     akis = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 } catch (hata1) {
                     try {
-                        // Arka yoksa bilgisayar kamerasını aç
+                        // 2. Arka kamera yoksa (Bilgisayarlar) varsayılan kamerayı aç
                         akis = await navigator.mediaDevices.getUserMedia({ video: true });
                     } catch (hata2) {
-                        alert("Kameraya ulaşılamadı. Lütfen adres çubuğundan izin verin.");
+                        alert("Kameraya ulaşılamadı. Lütfen adres çubuğundaki kamera simgesinden izin verin.");
                         return;
                     }
                 }
 
+                // Kamera başarıyla açıldıysa arayüzü güncelle
                 video.srcObject = akis;
                 kapsayici.style.display = 'block';
                 btn.innerHTML = '🛑 Taramayı Durdur';
                 btn.classList.add('kapat');
                 
+                // Kamerayı AI hazır olmadan da açmasına izin veriyoruz (bekleme yapmaz)
                 okumayiBaslat(video, durum);
             } else {
+                // Kamerayı Kapat
                 let trackler = akis.getTracks();
                 trackler.forEach(track => track.stop());
                 video.srcObject = null;
@@ -273,13 +271,14 @@
             async function dongu() {
                 if (!taramaAktif || video.readyState !== 4) return;
                 
-                // Yapay zeka henüz inmediyse döngüyü beklet
+                // Eğer kullanıcı kamerayı açtı ama Yapay Zeka daha inmediyse bekle
                 if (!ocrMotoru) {
                     durum.innerText = "Yapay zeka bekleniyor...";
                     setTimeout(dongu, 1000);
                     return;
                 }
 
+                // Kırmızı kutunun (ortanın) koordinatlarını hesapla ve kırp
                 const vGen = video.videoWidth;
                 const vYuk = video.videoHeight;
                 const kGen = vGen * 0.8; 
@@ -301,24 +300,25 @@
                         sepeteEkle(ayrilanVeri.isim, ayrilanVeri.fiyat);
                         durum.innerText = `✅ Bulundu: ${ayrilanVeri.isim} - ${ayrilanVeri.fiyat} ₺`;
                         
-                        if(taramaAktif) setTimeout(dongu, 3000); // 3 Saniye Mola
+                        if(taramaAktif) setTimeout(dongu, 3000); // Üst üste okumasın diye mola
                         return;
                     } else {
                         durum.innerText = "Fiyatı kırmızı kutuya ortalayın...";
                     }
                 } catch (hata) { }
                 
-                if(taramaAktif) setTimeout(dongu, 500); 
+                if(taramaAktif) setTimeout(dongu, 500); // Bulamazsa 0.5 saniye sonra tekrar çek
             }
             dongu();
         }
 
-        // --- ETİKET OKUMA ALGORİTMASI ---
+        // --- SARU ETİKET (MISIR 19₺) İÇİN ÖZEL ALGORİTMA ---
         function etiketiCozumle(hamMetin) {
             const satirlar = hamMetin.split('\n').map(s => s.trim()).filter(s => s.length > 0);
             let urunIsmi = "";
             let urunFiyati = 0;
 
+            // 1. Ürün Adı: Tamamen büyük harf olanı al
             for (let satir of satirlar) {
                 let temizSatir = satir.replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ\s]/g, '').trim();
                 if (temizSatir.length >= 3 && temizSatir === temizSatir.toUpperCase()) {
@@ -329,6 +329,7 @@
             if (!urunIsmi && satirlar.length > 0) urunIsmi = satirlar[0].replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ\s]/g, '').trim();
             if (!urunIsmi || urunIsmi.length < 2) urunIsmi = "Tanımsız Ürün";
 
+            // 2. Fiyat Okuma
             const tumMetin = hamMetin.replace(/\n/g, ' ');
             
             const kurluFiyat = tumMetin.match(/(\d+(?:[.,]\d{1,2})?)\s*(?:TL|₺|t)/i);
@@ -340,6 +341,7 @@
                 urunFiyati = parseFloat(mac[1] + "." + mac[2]);
             } 
             else {
+                // Sadece düz "19" yazıyorsa barkod ve yılları eleyip al
                 const tumRakamlar = tumMetin.match(/\b\d{1,4}\b/g);
                 if (tumRakamlar) {
                     const mantikliFiyatlar = tumRakamlar.filter(r => {
