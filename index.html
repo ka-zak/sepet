@@ -55,7 +55,6 @@
             font-size: 12px; z-index: 10; display: none; font-weight: bold;
         }
 
-        /* ÇEK BUTONU */
         .cek-btn {
             position: absolute; bottom: 45px; left: 50%;
             transform: translateX(-50%); background-color: #ff1744;
@@ -136,7 +135,7 @@
         
         <div class="ust-banner-alani">
             <div class="logo">KasaRaf</div>
-            <div class="bilgi-kutusu" id="bilgi-kutusu">Yapay Zeka Hazırlanıyor...</div>
+            <div class="bilgi-kutusu" id="bilgi-kutusu">Yapay Zeka Yükleniyor...</div>
         </div>
         
         <div id="kamera-kapsayici">
@@ -176,15 +175,18 @@
         let benzersizUrunId = 0;
         let ocrMotoru = null; 
 
+        // Kesin çalışan Tesseract v4 motor başlatma yapısı
         document.addEventListener('DOMContentLoaded', async () => {
             const bilgiKutusu = document.getElementById('bilgi-kutusu');
             try {
-                ocrMotoru = await Tesseract.createWorker('tur');
+                bilgiKutusu.innerText = "Yapay Zeka Motoru Hazırlanıyor...";
+                ocrMotoru = await Tesseract.createWorker();
+                await ocrMotoru.loadLanguage('tur');
+                await ocrMotoru.initialize('tur');
                 bilgiKutusu.innerText = "✅ Sistem Hazır! Kamerayı açabilirsiniz.";
-                bilgiKutusu.style.backgroundColor = "#e6f4ea";
-                bilgiKutusu.style.color = "#137333";
+                bilgiKupusuStyle = "#137333";
             } catch (hata) {
-                bilgiKutusu.innerText = "❌ Hata: " + hata.message;
+                bilgiKutusu.innerText = "❌ AI Başlatma Hatası: " + hata.message;
             }
         });
 
@@ -224,32 +226,46 @@
             }
         }
 
-        // BUTONA BASILDIĞINDA ANLIK FOTOĞRAF ÇEKER VE OKUR
+        // FOTOĞRAF ÇEK VE OKU (Detaylı Hata Gösterimi ile)
         async function etiketiOkuVeEkle() {
             const video = document.getElementById('kamera-video');
             const durum = document.getElementById('durum-etiket');
-            if (!ocrMotoru || !akis) return;
+            
+            if (!ocrMotoru) {
+                durum.innerText = "Yapay zeka henüz yüklenmedi!";
+                return;
+            }
+            if (!akis) {
+                durum.innerText = "Kamera açık değil!";
+                return;
+            }
 
             durum.innerText = "Okunuyor, lütfen bekleyin...";
 
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
             try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
                 const { data: { text } } = await ocrMotoru.recognize(canvas);
+                
+                // Okunan metni ekranda görelim ki nerede takıldığını anlayalım
+                console.log("Okunan Ham Metin:", text);
+                let temizMetin = text.replace(/\s+/g, ' ').trim();
+
                 const veri = etiketiCozumle(text);
 
                 if (veri.fiyat > 0) {
                     sepeteEkle(veri.isim, veri.fiyat);
                     durum.innerText = `✅ Eklendi: ${veri.isim} (${veri.fiyat} ₺)`;
                 } else {
-                    durum.innerText = "❌ Fiyat bulunamadı, tekrar deneyin.";
+                    durum.innerText = `Bulundu ama fiyat çıkmadı. (Metin: ${temizMetin.substring(0, 20)}...)`;
                 }
             } catch (hata) {
-                durum.innerText = "Okuma hatası oluştu.";
+                durum.innerText = "Hata Detayı: " + hata.message;
+                console.error(hata);
             }
         }
 
