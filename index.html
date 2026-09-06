@@ -29,8 +29,9 @@
         .logo { font-size: 26px; font-weight: bold; color: #1a73e8; margin-bottom: 5px; }
         
         .bilgi-kutusu {
-            background-color: #e6f4ea; color: #137333;
+            background-color: #e8f0fe; color: #1a73e8;
             padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 500;
+            transition: all 0.3s;
         }
 
         #kamera-kapsayici {
@@ -56,7 +57,7 @@
             font-size: 12px; z-index: 10; display: none; font-weight: bold;
         }
 
-        /* TABLO TASARIMI */
+        /* TABLO */
         .sepet-kapsayici {
             flex: 1; overflow-y: auto;
             border: 1px solid #dadce0; border-radius: 8px;
@@ -127,7 +128,7 @@
         
         <div class="ust-banner-alani">
             <div class="logo">KasaRaf</div>
-            <div class="bilgi-kutusu" id="bilgi-kutusu">✅ Sistem Hazır! Taramayı Başlatabilirsiniz.</div>
+            <div class="bilgi-kutusu" id="bilgi-kutusu">Yapay Zeka Hazırlanıyor... Lütfen Bekleyin.</div>
         </div>
         
         <div id="kamera-kapsayici">
@@ -167,14 +168,32 @@
         let benzersizUrunId = 0;
         let ocrMotoru = null; 
 
-        // Sayfa açıldığında motoru arka planda hızlıca kur
+        // YAPAY ZEKA BAŞLATMA (Hata Düzeltildi)
         document.addEventListener('DOMContentLoaded', async () => {
+            const bilgiKutusu = document.getElementById('bilgi-kutusu');
             try {
-                ocrMotoru = await Tesseract.createWorker();
+                // AWAIT EKLENDİ - Motorun oluşturulması artık bekleniyor
+                ocrMotoru = await Tesseract.createWorker({
+                    logger: m => {
+                        if (m.status === 'downloading data') {
+                            bilgiKutusu.innerText = `Dil Paketi İniyor: %${Math.round(m.progress * 100)}`;
+                        } else if (m.status === 'initializing api' || m.status === 'loading tesseract core') {
+                            bilgiKutusu.innerText = `Motor Hazırlanıyor...`;
+                        }
+                    }
+                });
+
                 await ocrMotoru.loadLanguage('tur');
                 await ocrMotoru.initialize('tur');
+                
+                bilgiKutusu.innerText = "✅ Sistem Hazır! Taramayı Başlatabilirsiniz.";
+                bilgiKutusu.style.backgroundColor = "#e6f4ea";
+                bilgiKutusu.style.color = "#137333";
             } catch (hata) {
-                console.error("AI Başlatma Hatası:", hata);
+                bilgiKutusu.innerText = "❌ Yapay Zeka Yüklenemedi! İnterneti kontrol edin.";
+                bilgiKutusu.style.backgroundColor = "#fce8e6";
+                bilgiKutusu.style.color = "#d93025";
+                console.error("Başlatma Hatası:", hata);
             }
         });
 
@@ -192,7 +211,7 @@
                     try {
                         akis = await navigator.mediaDevices.getUserMedia({ video: true });
                     } catch (hata2) {
-                        alert("Kameraya ulaşılamadı.");
+                        alert("Kameraya ulaşılamadı. Lütfen adres çubuğundan izin verin.");
                         return;
                     }
                 }
@@ -245,7 +264,7 @@
                 canvas.height = kYuk;
                 ctx.drawImage(video, kX, kY, kGen, kYuk, 0, 0, kGen, kYuk);
 
-                durum.innerText = "Etiket taranıyor...";
+                durum.innerText = "Etiket inceleniyor...";
 
                 try {
                     const { data: { text } } = await ocrMotoru.recognize(canvas);
@@ -253,27 +272,26 @@
 
                     if (ayrilanVeri.fiyat > 0) {
                         sepeteEkle(ayrilanVeri.isim, ayrilanVeri.fiyat);
-                        durum.innerText = `✅ Eklendi: ${ayrilanVeri.isim} (${ayrilanVeri.fiyat} ₺)`;
+                        durum.innerText = `✅ Bulundu: ${ayrilanVeri.isim} - ${ayrilanVeri.fiyat} ₺`;
                         
-                        // Ürün eklendikten sonra yeni ürünler için 3 saniye bekle
-                        if(taramaAktif) await new Promise(r => setTimeout(r, 3000));
+                        if(taramaAktif) setTimeout(dongu, 3000); 
+                        return;
                     } else {
-                        durum.innerText = "Etiketi kırmızı kutuya ortalayın...";
+                        durum.innerText = "Fiyatı kırmızı kutuya ortalayın...";
                     }
                 } catch (hata) { }
                 
-                if(taramaAktif) setTimeout(dongu, 600); 
+                if(taramaAktif) setTimeout(dongu, 500); 
             }
             dongu();
         }
 
-        // ETİKET ÇÖZÜMLEME (MISIR - 19 Uyumlu)
+        // ETİKET ÇÖZÜMLEME
         function etiketiCozumle(hamMetin) {
             const satirlar = hamMetin.split('\n').map(s => s.trim()).filter(s => s.length > 0);
             let urunIsmi = "";
             let urunFiyati = 0;
 
-            // 1. Ürün ismini bul (Büyük harfli kelime, örn: MISIR)
             for (let satir of satirlar) {
                 let temizSatir = satir.replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ\s]/g, '').trim();
                 if (temizSatir.length >= 3 && temizSatir === temizSatir.toUpperCase()) {
@@ -282,33 +300,33 @@
                 }
             }
             if (!urunIsmi && satirlar.length > 0) urunIsmi = satirlar[0].replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ\s]/g, '').trim();
-            if (!urunIsmi || urunIsmi.length < 2) urunIsmi = "Raf Ürünü";
+            if (!urunIsmi || urunIsmi.length < 2) urunIsmi = "Tanımsız Ürün";
 
             const tumMetin = hamMetin.replace(/\n/g, ' ');
-
-            // 2. Fiyatı Bul (Örn: 19 veya 19.00 veya 19,00)
+            
             const kurluFiyat = tumMetin.match(/(\d+(?:[.,]\d{1,2})?)\s*(?:TL|₺|t)/i);
             if (kurluFiyat) {
                 urunFiyati = parseFloat(kurluFiyat[1].replace(',', '.'));
-            } else {
-                // Etiket üzerinde TL yazmasa bile mantıklı tekli sayıları yakala (Örn: 19)
-                const tumRakamlar = tumMetin.match(/\b\d{1,3}\b/g);
+            } 
+            else if (tumMetin.match(/\b(\d{1,4})[.,](\d{2})\b/)) {
+                const mac = tumMetin.match(/\b(\d{1,4})[.,](\d{2})\b/);
+                urunFiyati = parseFloat(mac[1] + "." + mac[2]);
+            } 
+            else {
+                const tumRakamlar = tumMetin.match(/\b\d{1,4}\b/g);
                 if (tumRakamlar) {
                     const mantikliFiyatlar = tumRakamlar.filter(r => {
                         let sayi = parseInt(r);
-                        // Yılları (2026 vb.) ve barkod numaralarını ele
-                        return sayi > 0 && sayi < 500 && sayi !== 2024 && sayi !== 2025 && sayi !== 2026;
+                        return sayi > 0 && sayi < 1000 && sayi !== 2024 && sayi !== 2025 && sayi !== 2026;
                     });
-                    if (mantikliFiyatlar.length > 0) {
-                        urunFiyati = parseFloat(mantikliFiyatlar[0]);
-                    }
+                    if (mantikliFiyatlar.length > 0) urunFiyati = parseFloat(mantikliFiyatlar[0]);
                 }
             }
 
             return { isim: urunIsmi, fiyat: urunFiyati };
         }
 
-        // TABLO LİSTELEME VE SEPET
+        // TABLO LİSTELEME
         function sepeteEkle(isim, fiyat) {
             const mevcut = sepet.find(u => u.isim === isim && u.fiyat === fiyat);
             
@@ -316,7 +334,6 @@
                 mevcut.adet += 1;
             } else {
                 benzersizUrunId++;
-                // Adet null gelirse otomatik 1 atanır
                 sepet.push({ id: benzersizUrunId, isim: isim, fiyat: fiyat, adet: 1 });
             }
             tabloyuCiz();
