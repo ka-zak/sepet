@@ -1,379 +1,2437 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KasaRaf - Akıllı Alışveriş Sepetim</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
-    <style>
-        body {
-            margin: 0; padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
-            display: flex; justify-content: center;
-            color: #202124; height: 100vh;
-        }
+<meta charset="UTF-8">
 
-        .uygulama-kapsayici {
-            width: 100%; max-width: 600px;
-            display: flex; flex-direction: column;
-            padding: 15px; box-sizing: border-box;
-            height: 100vh; background: white;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-        }
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
 
-        .ust-banner-alani { text-align: center; margin-bottom: 10px; }
-        .logo { font-size: 26px; font-weight: bold; color: #1a73e8; margin-bottom: 5px; }
-        
-        .bilgi-kutusu {
-            background-color: #e8f0fe; color: #1a73e8;
-            padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 500;
-        }
+<title>KasaRaf - Etiket Okuma Sistemi</title>
 
-        #kamera-kapsayici {
-            width: 100%; height: 240px;
-            border: 2px solid #1a73e8; border-radius: 8px;
-            margin-bottom: 15px; display: none;
-            position: relative; background: #000; overflow: hidden;
-        }
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-        #kamera-video { width: 100%; height: 100%; object-fit: cover; }
+<style>
 
-        .okuma-hedefi {
-            position: absolute; top: 25%; left: 5%; right: 5%; height: 50%;
-            border: 2px dashed #ff1744;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
-            pointer-events: none; border-radius: 4px;
-        }
+* {
+    box-sizing: border-box;
+}
 
-        .tarama-durumu {
-            position: absolute; bottom: 10px; left: 50%;
-            transform: translateX(-50%); background: rgba(0,0,0,0.85);
-            color: #ffeb3b; padding: 6px 16px; border-radius: 20px;
-            font-size: 12px; z-index: 10; display: none; font-weight: bold;
-        }
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f0f2f5;
+    color: #202124;
+}
 
-        .cek-btn {
-            position: absolute; bottom: 45px; left: 50%;
-            transform: translateX(-50%); background-color: #ff1744;
-            color: white; border: none; padding: 10px 20px;
-            font-size: 14px; font-weight: bold; border-radius: 20px;
-            cursor: pointer; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            display: none;
-        }
+.uygulama-kapsayici {
+    width: 100%;
+    max-width: 650px;
+    min-height: 100vh;
+    margin: auto;
+    background: white;
+    padding: 15px;
+}
 
-        /* TABLO TASARIMI */
-        .sepet-kapsayici {
-            flex: 1; overflow-y: auto;
-            border: 1px solid #dadce0; border-radius: 8px;
-            background-color: #ffffff;
-        }
+.ust-banner-alani {
+    text-align: center;
+    margin-bottom: 10px;
+}
 
-        .kasa-tablosu { width: 100%; border-collapse: collapse; text-align: left; }
-        .kasa-tablosu thead th {
-            background-color: #f8f9fa; color: #5f6368;
-            font-size: 12px; padding: 10px 8px;
-            border-bottom: 2px solid #dadce0; position: sticky; top: 0;
-        }
-        .kasa-tablosu tbody td {
-            padding: 10px 8px; border-bottom: 1px solid #eee;
-            vertical-align: middle; font-size: 14px; color: #202124;
-        }
+.logo {
+    font-size: 28px;
+    font-weight: bold;
+    color: #1a73e8;
+}
 
-        .td-urun { font-weight: bold; width: 30%; }
-        .td-fiyat { color: #5f6368; width: 15%; font-size: 13px; }
-        .td-adet { width: 25%; white-space: nowrap; }
-        .td-toplam { font-weight: bold; color: #1a73e8; width: 20%; }
-        .td-sil { width: 10%; text-align: center; }
+.bilgi-kutusu {
+    margin-top: 8px;
+    padding: 9px;
+    border-radius: 8px;
+    background: #e8f0fe;
+    color: #1a73e8;
+    font-size: 13px;
+    font-weight: bold;
+}
 
-        .adet-kutusu {
-            display: inline-flex; align-items: center;
-            border: 1px solid #dadce0; border-radius: 4px; overflow: hidden;
-        }
-        .adet-btn {
-            background: #f1f3f4; border: none; width: 26px; height: 26px;
-            cursor: pointer; font-weight: bold; font-size: 14px;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .adet-input {
-            width: 35px; height: 24px; text-align: center; border: none;
-            border-left: 1px solid #dadce0; border-right: 1px solid #dadce0;
-            font-size: 13px; font-weight: bold; outline: none;
-        }
-        .adet-input::-webkit-inner-spin-button, 
-        .adet-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
-        .sil-btn {
-            background: #fce8e6; color: #d93025; border: none;
-            width: 28px; height: 28px; border-radius: 4px;
-            cursor: pointer; font-size: 14px;
-            display: flex; align-items: center; justify-content: center;
-        }
+/* =========================
+   KAMERA
+========================= */
 
-        .bos-sepet { text-align: center; padding: 40px 20px; color: #70757a; font-size: 14px; }
+#kamera-kapsayici {
 
-        .alt-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 0 5px 0; border-top: 2px solid #dadce0;
-            background-color: #ffffff; margin-top: 10px;
-        }
-        .toplam-tutar { font-size: 22px; font-weight: bold; color: #d93025; }
-        
-        .kamera-btn {
-            background-color: #1a73e8; color: white; border: none;
-            padding: 12px 20px; font-size: 15px; font-weight: bold;
-            border-radius: 8px; cursor: pointer;
-        }
-        .kamera-btn.kapat { background-color: #5f6368; }
-    </style>
+    width: 100%;
+    height: 270px;
+
+    position: relative;
+
+    display: none;
+
+    background: black;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    border: 2px solid #1a73e8;
+
+    margin-bottom: 12px;
+}
+
+#kamera-video {
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+}
+
+
+/* Her boyuttaki etikete uygun geniş alan */
+
+.okuma-hedefi {
+
+    position: absolute;
+
+    top: 10%;
+    bottom: 15%;
+
+    left: 5%;
+    right: 5%;
+
+    border: 2px dashed #ff1744;
+
+    border-radius: 8px;
+
+    pointer-events: none;
+}
+
+
+.cek-btn {
+
+    position: absolute;
+
+    bottom: 38px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    background: #ff1744;
+
+    color: white;
+
+    border: 2px solid white;
+
+    padding: 12px 22px;
+
+    border-radius: 25px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    z-index: 10;
+
+    white-space: nowrap;
+}
+
+.cek-btn:disabled {
+
+    opacity: 0.6;
+
+    cursor: not-allowed;
+}
+
+
+.tarama-durumu {
+
+    position: absolute;
+
+    bottom: 7px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    background: rgba(0,0,0,0.85);
+
+    color: #ffeb3b;
+
+    padding: 6px 14px;
+
+    border-radius: 20px;
+
+    font-size: 12px;
+
+    white-space: nowrap;
+
+    z-index: 10;
+}
+
+
+/* =========================
+   OCR SONUCU
+========================= */
+
+.ocr-kutu {
+
+    display: none;
+
+    margin-bottom: 12px;
+
+    border: 1px solid #dadce0;
+
+    border-radius: 8px;
+
+    overflow: hidden;
+}
+
+.ocr-baslik {
+
+    padding: 8px;
+
+    background: #f8f9fa;
+
+    font-weight: bold;
+
+    font-size: 13px;
+
+    color: #5f6368;
+}
+
+#ocr-metin {
+
+    padding: 10px;
+
+    font-family: monospace;
+
+    font-size: 12px;
+
+    white-space: pre-wrap;
+
+    max-height: 150px;
+
+    overflow-y: auto;
+
+    background: white;
+}
+
+
+/* =========================
+   TABLO
+========================= */
+
+.sepet-kapsayici {
+
+    min-height: 280px;
+
+    border: 1px solid #dadce0;
+
+    border-radius: 8px;
+
+    overflow-x: auto;
+}
+
+.kasa-tablosu {
+
+    width: 100%;
+
+    min-width: 600px;
+
+    border-collapse: collapse;
+}
+
+.kasa-tablosu th {
+
+    background: #f8f9fa;
+
+    padding: 10px 7px;
+
+    font-size: 12px;
+
+    color: #5f6368;
+
+    text-align: left;
+
+    border-bottom: 2px solid #dadce0;
+}
+
+.kasa-tablosu td {
+
+    padding: 10px 7px;
+
+    border-bottom: 1px solid #eeeeee;
+
+    font-size: 14px;
+}
+
+.td-urun {
+
+    font-weight: bold;
+
+    width: 30%;
+}
+
+.td-fiyat {
+
+    width: 15%;
+}
+
+.td-adet {
+
+    width: 25%;
+}
+
+.td-toplam {
+
+    width: 20%;
+
+    color: #1a73e8;
+
+    font-weight: bold;
+}
+
+.td-sil {
+
+    width: 10%;
+
+    text-align: center;
+}
+
+
+/* =========================
+   ADET
+========================= */
+
+.adet-kutusu {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    border: 1px solid #dadce0;
+
+    border-radius: 5px;
+
+    overflow: hidden;
+}
+
+.adet-btn {
+
+    width: 30px;
+
+    height: 30px;
+
+    border: none;
+
+    background: #f1f3f4;
+
+    cursor: pointer;
+
+    font-size: 17px;
+
+    font-weight: bold;
+}
+
+.adet-input {
+
+    width: 48px;
+
+    height: 30px;
+
+    text-align: center;
+
+    border: none;
+
+    border-left: 1px solid #dadce0;
+
+    border-right: 1px solid #dadce0;
+
+    outline: none;
+
+    font-weight: bold;
+}
+
+.sil-btn {
+
+    width: 30px;
+
+    height: 30px;
+
+    border: none;
+
+    border-radius: 5px;
+
+    background: #fce8e6;
+
+    cursor: pointer;
+
+    font-size: 15px;
+}
+
+
+/* =========================
+   BOŞ SEPET
+========================= */
+
+.bos-sepet {
+
+    padding: 60px 20px;
+
+    text-align: center;
+
+    color: #70757a;
+}
+
+
+/* =========================
+   ALT ALAN
+========================= */
+
+.alt-bar {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-top: 12px;
+
+    padding-top: 12px;
+
+    border-top: 2px solid #dadce0;
+}
+
+.toplam-tutar {
+
+    font-size: 23px;
+
+    font-weight: bold;
+
+    color: #d93025;
+}
+
+.kamera-btn {
+
+    padding: 12px 18px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #1a73e8;
+
+    color: white;
+
+    font-size: 14px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.kamera-btn.kapat {
+
+    background: #5f6368;
+}
+
+</style>
+
 </head>
+
+
 <body>
 
-    <div class="uygulama-kapsayici">
-        
-        <div class="ust-banner-alani">
-            <div class="logo">KasaRaf</div>
-            <div class="bilgi-kutusu" id="bilgi-kutusu">Yapay Zeka Yükleniyor...</div>
-        </div>
-        
-        <div id="kamera-kapsayici">
-            <video id="kamera-video" autoplay playsinline></video>
-            <div class="okuma-hedefi"></div>
-            <div id="durum-etiket" class="tarama-durumu">Etiketi kutuya ortalayın</div>
-            <button class="cek-btn" id="btn-cek" onclick="etiketiOkuVeEkle()">🔍 Bu Etiketi Oku</button>
+
+<div class="uygulama-kapsayici">
+
+
+    <div class="ust-banner-alani">
+
+        <div class="logo">
+            KasaRaf
         </div>
 
-        <div class="sepet-kapsayici">
-            <table class="kasa-tablosu" id="kasa-tablosu" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>Ürün</th>
-                        <th>B.Fiyat</th>
-                        <th>Adet</th>
-                        <th>Toplam</th>
-                        <th>İşlem</th>
-                    </tr>
-                </thead>
-                <tbody id="sepet-govdesi"></tbody>
-            </table>
-            <div class="bos-sepet" id="bos-sepet-mesaji">
-                Sepetiniz boş.<br>Etiketi gösterip "Bu Etiketi Oku" butonuna basın.
-            </div>
+        <div class="bilgi-kutusu"
+             id="bilgi-kutusu">
+
+            OCR hazırlanıyor...
+
         </div>
 
-        <div class="alt-bar">
-            <div class="toplam-alan">Genel Toplam<br><span class="toplam-tutar" id="genel-toplam">0.00 TL</span></div>
-            <button class="kamera-btn" id="btn-kamera" onclick="kameraKontrol()">📸 Kamerayı Aç</button>
-        </div>
     </div>
 
-    <script>
-        let akis = null;
-        let sepet = [];
-        let benzersizUrunId = 0;
-        let ocrMotoru = null; 
 
-        // Kesin çalışan Tesseract v4 motor başlatma yapısı
-        document.addEventListener('DOMContentLoaded', async () => {
-            const bilgiKutusu = document.getElementById('bilgi-kutusu');
-            try {
-                bilgiKutusu.innerText = "Yapay Zeka Motoru Hazırlanıyor...";
-                ocrMotoru = await Tesseract.createWorker();
-                await ocrMotoru.loadLanguage('tur');
-                await ocrMotoru.initialize('tur');
-                bilgiKutusu.innerText = "✅ Sistem Hazır! Kamerayı açabilirsiniz.";
-                bilgiKupusuStyle = "#137333";
-            } catch (hata) {
-                bilgiKutusu.innerText = "❌ AI Başlatma Hatası: " + hata.message;
-            }
+
+    <!-- KAMERA -->
+
+    <div id="kamera-kapsayici">
+
+        <video id="kamera-video"
+               autoplay
+               playsinline>
+        </video>
+
+        <div class="okuma-hedefi"></div>
+
+
+        <button class="cek-btn"
+                id="btn-cek"
+                onclick="etiketiOkuVeEkle()">
+
+            🔍 Bu Etiketi Oku
+
+        </button>
+
+
+        <div class="tarama-durumu"
+             id="durum-etiket">
+
+            Etiketi kutuya ortalayın
+
+        </div>
+
+    </div>
+
+
+
+    <!-- OCR HAM METNİ -->
+
+    <div class="ocr-kutu"
+         id="ocr-kutu">
+
+        <div class="ocr-baslik">
+
+            🔍 OCR'ın Okuduğu Ham Metin
+
+        </div>
+
+        <div id="ocr-metin"></div>
+
+    </div>
+
+
+
+    <!-- TABLO -->
+
+    <div class="sepet-kapsayici">
+
+
+        <table class="kasa-tablosu"
+               id="kasa-tablosu"
+               style="display:none;">
+
+            <thead>
+
+                <tr>
+
+                    <th>Ürün</th>
+
+                    <th>B.Fiyat</th>
+
+                    <th>Adet</th>
+
+                    <th>Toplam</th>
+
+                    <th>İşlem</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="sepet-govdesi">
+            </tbody>
+
+        </table>
+
+
+
+        <div class="bos-sepet"
+             id="bos-sepet-mesaji">
+
+            Sepetiniz boş.
+
+            <br><br>
+
+            Kamerayı açın, etiketi gösterin ve
+            <b>Bu Etiketi Oku</b> butonuna basın.
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- ALT -->
+
+    <div class="alt-bar">
+
+
+        <div>
+
+            Genel Toplam
+
+            <br>
+
+            <span class="toplam-tutar"
+                  id="genel-toplam">
+
+                0,00 TL
+
+            </span>
+
+        </div>
+
+
+
+        <button class="kamera-btn"
+                id="btn-kamera"
+                onclick="kameraKontrol()">
+
+            📸 Kamerayı Aç
+
+        </button>
+
+
+    </div>
+
+
+</div>
+
+
+
+<script>
+
+
+/* ==========================================
+   GENEL DEĞİŞKENLER
+========================================== */
+
+let akis = null;
+
+let sepet = [];
+
+let benzersizUrunId = 0;
+
+let ocrMotoru = null;
+
+
+/*
+OCR aynı anda iki kez çalışmasın.
+İKİNCİ ETİKET SORUNUNUN önemli çözümlerinden biri.
+*/
+
+let ocrCalisiyor = false;
+
+
+
+/* ==========================================
+   OCR MOTORUNU BAŞLAT
+========================================== */
+
+window.addEventListener("DOMContentLoaded", async function () {
+
+
+    const bilgiKutusu =
+        document.getElementById("bilgi-kutusu");
+
+
+    try {
+
+
+        bilgiKutusu.innerText =
+            "⏳ OCR motoru hazırlanıyor...";
+
+
+        /*
+        Tesseract v5
+        */
+
+        ocrMotoru =
+            await Tesseract.createWorker(
+                "tur",
+                1,
+                {
+                    logger: function(m) {
+
+                        if (
+                            m.status === "recognizing text"
+                        ) {
+
+                            bilgiKutusu.innerText =
+                                "🔍 OCR çalışıyor...";
+
+                        }
+
+                    }
+                }
+            );
+
+
+        /*
+        OCR için daha uygun ayarlar
+        */
+
+        await ocrMotoru.setParameters({
+
+            /*
+            Tekdüze olmayan etiketler için
+            otomatik sayfa düzeni.
+            */
+
+            tessedit_pageseg_mode: "6"
+
         });
 
-        async function kameraKontrol() {
-            const video = document.getElementById('kamera-video');
-            const kapsayici = document.getElementById('kamera-kapsayici');
-            const btn = document.getElementById('btn-kamera');
-            const cekBtn = document.getElementById('btn-cek');
-            const durum = document.getElementById('durum-etiket');
 
-            if (!akis) {
-                try {
-                    akis = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                } catch (e1) {
-                    try {
-                        akis = await navigator.mediaDevices.getUserMedia({ video: true });
-                    } catch (e2) {
-                        alert("Kameraya erişilemedi!");
-                        return;
-                    }
-                }
-                video.srcObject = akis;
-                kapsayici.style.display = 'block';
-                cekBtn.style.display = 'block';
-                durum.style.display = 'block';
-                btn.innerHTML = '🛑 Kamerayı Kapat';
-                btn.classList.add('kapat');
-            } else {
-                akis.getTracks().forEach(t => t.stop());
-                video.srcObject = null;
-                akis = null;
-                kapsayici.style.display = 'none';
-                cekBtn.style.display = 'none';
-                durum.style.display = 'none';
-                btn.innerHTML = '📸 Kamerayı Aç';
-                btn.classList.remove('kapat');
-            }
+        bilgiKutusu.innerText =
+            "✅ Sistem Hazır! Kamerayı açabilirsiniz.";
+
+
+        bilgiKutusu.style.background =
+            "#e6f4ea";
+
+
+        bilgiKutusu.style.color =
+            "#137333";
+
+
+    }
+
+    catch (hata) {
+
+
+        console.error(hata);
+
+
+        bilgiKutusu.innerText =
+            "❌ OCR Başlatma Hatası: " +
+            hata.message;
+
+    }
+
+
+});
+
+
+
+/* ==========================================
+   KAMERA AÇ / KAPAT
+========================================== */
+
+async function kameraKontrol() {
+
+
+    const video =
+        document.getElementById("kamera-video");
+
+
+    const kapsayici =
+        document.getElementById("kamera-kapsayici");
+
+
+    const btn =
+        document.getElementById("btn-kamera");
+
+
+    const durum =
+        document.getElementById("durum-etiket");
+
+
+    const cekBtn =
+        document.getElementById("btn-cek");
+
+
+
+    /* =====================
+       KAMERA AÇ
+    ===================== */
+
+    if (!akis) {
+
+
+        if (!ocrMotoru) {
+
+            alert(
+                "OCR henüz hazırlanıyor. Lütfen bekleyin."
+            );
+
+            return;
+
         }
 
-        // FOTOĞRAF ÇEK VE OKU (Detaylı Hata Gösterimi ile)
-        async function etiketiOkuVeEkle() {
-            const video = document.getElementById('kamera-video');
-            const durum = document.getElementById('durum-etiket');
-            
-            if (!ocrMotoru) {
-                durum.innerText = "Yapay zeka henüz yüklenmedi!";
-                return;
-            }
-            if (!akis) {
-                durum.innerText = "Kamera açık değil!";
-                return;
-            }
 
-            durum.innerText = "Okunuyor, lütfen bekleyin...";
+        try {
+
+
+            akis =
+                await navigator.mediaDevices.getUserMedia({
+
+                    video: {
+
+                        facingMode: {
+                            ideal: "environment"
+                        },
+
+                        width: {
+                            ideal: 1920
+                        },
+
+                        height: {
+                            ideal: 1080
+                        }
+
+                    },
+
+                    audio: false
+
+                });
+
+
+        }
+
+        catch (hata1) {
+
+
+            /*
+            Bilgisayar kameralarında
+            environment çalışmazsa
+            normal kamera dene.
+            */
 
             try {
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 640;
-                canvas.height = video.videoHeight || 480;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                const { data: { text } } = await ocrMotoru.recognize(canvas);
-                
-                // Okunan metni ekranda görelim ki nerede takıldığını anlayalım
-                console.log("Okunan Ham Metin:", text);
-                let temizMetin = text.replace(/\s+/g, ' ').trim();
 
-                const veri = etiketiCozumle(text);
+                akis =
+                    await navigator.mediaDevices.getUserMedia({
 
-                if (veri.fiyat > 0) {
-                    sepeteEkle(veri.isim, veri.fiyat);
-                    durum.innerText = `✅ Eklendi: ${veri.isim} (${veri.fiyat} ₺)`;
-                } else {
-                    durum.innerText = `Bulundu ama fiyat çıkmadı. (Metin: ${temizMetin.substring(0, 20)}...)`;
-                }
-            } catch (hata) {
-                durum.innerText = "Hata Detayı: " + hata.message;
-                console.error(hata);
+                        video: true,
+
+                        audio: false
+
+                    });
+
+
             }
-        }
 
-        function etiketiCozumle(hamMetin) {
-            const satirlar = hamMetin.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-            let urunIsmi = "";
-            let urunFiyati = 0;
+            catch (hata2) {
 
-            for (let satir of satirlar) {
-                let temiz = satir.replace(/[^a-zA-ZçğıöşüÇĞIÖŞÜ\s]/g, '').trim();
-                if (temiz.length >= 3) {
-                    urunIsmi = temiz.toUpperCase();
-                    break;
-                }
-            }
-            if (!urunIsmi) urunIsmi = "MISIR";
 
-            const tumRakamlar = hamMetin.match(/\b\d{1,3}\b/g);
-            if (tumRakamlar) {
-                for (let r of tumRakamlar) {
-                    let sayi = parseInt(r);
-                    if (sayi > 0 && sayi < 1000 && sayi !== 2024 && sayi !== 2025 && sayi !== 2026) {
-                        urunFiyati = parseFloat(sayi);
-                        break;
-                    }
-                }
-            }
-            return { isim: urunIsmi, fiyat: urunFiyati };
-        }
+                alert(
+                    "Kameraya erişilemedi."
+                );
 
-        function sepeteEkle(isim, fiyat) {
-            const mevcut = sepet.find(u => u.isim === isim && u.fiyat === fiyat);
-            if (mevcut) {
-                mevcut.adet += 1;
-            } else {
-                benzersizUrunId++;
-                sepet.push({ id: benzersizUrunId, isim: isim, fiyat: fiyat, adet: 1 });
-            }
-            tabloyuCiz();
-        }
-
-        function tabloyuCiz() {
-            const tbody = document.getElementById('sepet-govdesi');
-            const tablo = document.getElementById('kasa-tablosu');
-            const bosMesaj = document.getElementById('bos-sepet-mesaji');
-            const genelToplamAlan = document.getElementById('genel-toplam');
-
-            if (sepet.length === 0) {
-                tablo.style.display = 'none';
-                bosMesaj.style.display = 'block';
-                genelToplamAlan.innerText = '0.00 TL';
                 return;
+
             }
 
-            tablo.style.display = 'table';
-            bosMesaj.style.display = 'none';
-            tbody.innerHTML = '';
-            let genelToplam = 0;
-
-            sepet.forEach(urun => {
-                const satirToplam = urun.fiyat * urun.adet;
-                genelToplam += satirToplam;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="td-urun">${urun.isim}</td>
-                    <td class="td-fiyat">${urun.fiyat.toFixed(2)}</td>
-                    <td class="td-adet">
-                        <div class="adet-kutusu">
-                            <button class="adet-btn" onclick="adetDegistir(${urun.id}, -1)">-</button>
-                            <input type="number" class="adet-input" value="${urun.adet}" min="1" onchange="klavyeAdet(event, ${urun.id})">
-                            <button class="adet-btn" onclick="adetDegistir(${urun.id}, 1)">+</button>
-                        </div>
-                    </td>
-                    <td class="td-toplam">${satirToplam.toFixed(2)}</td>
-                    <td class="td-sil">
-                        <button class="sil-btn" onclick="satirSil(${urun.id})">🗑️</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            genelToplamAlan.innerText = genelToplam.toFixed(2) + ' TL';
         }
 
-        function adetDegistir(id, miktar) {
-            const urun = sepet.find(u => u.id === id);
-            if (urun) {
-                urun.adet += miktar;
-                if (urun.adet < 1) urun.adet = 1;
-                tabloyuCiz();
+
+
+        video.srcObject =
+            akis;
+
+
+
+        /*
+        Video gerçekten hazır olmadan
+        OCR çekim yapmasın.
+        */
+
+        await new Promise(function(resolve) {
+
+
+            video.onloadedmetadata =
+                function() {
+
+
+                    video.play();
+
+                    resolve();
+
+                };
+
+
+        });
+
+
+
+        kapsayici.style.display =
+            "block";
+
+
+        btn.innerHTML =
+            "🛑 Kamerayı Kapat";
+
+
+        btn.classList.add("kapat");
+
+
+        cekBtn.disabled =
+            false;
+
+
+        durum.innerText =
+            "Etiketi kırmızı alanın içine yerleştirin";
+
+
+    }
+
+
+    /* =====================
+       KAMERA KAPAT
+    ===================== */
+
+    else {
+
+
+        if (ocrCalisiyor) {
+
+            alert(
+                "OCR işlemi devam ediyor. Lütfen bitmesini bekleyin."
+            );
+
+            return;
+
+        }
+
+
+        akis.getTracks().forEach(
+            function(track) {
+
+                track.stop();
+
             }
-        }
+        );
 
-        function klavyeAdet(event, id) {
-            const urun = sepet.find(u => u.id === id);
-            if (urun) {
-                let yeniAdet = parseInt(event.target.value);
-                if (isNaN(yeniAdet) || yeniAdet < 1) yeniAdet = 1;
-                urun.adet = yeniAdet;
-                tabloyuCiz();
+
+        video.srcObject =
+            null;
+
+
+        akis =
+            null;
+
+
+        kapsayici.style.display =
+            "none";
+
+
+        btn.innerHTML =
+            "📸 Kamerayı Aç";
+
+
+        btn.classList.remove("kapat");
+
+
+    }
+
+
+}
+
+
+
+/* ==========================================
+   GÖRÜNTÜYÜ YAKALA
+========================================== */
+
+function kameradanGoruntuAl() {
+
+
+    const video =
+        document.getElementById("kamera-video");
+
+
+    const canvas =
+        document.createElement("canvas");
+
+
+    const ctx =
+        canvas.getContext(
+            "2d",
+            {
+                willReadFrequently: true
             }
+        );
+
+
+    const videoGen =
+        video.videoWidth;
+
+
+    const videoYuk =
+        video.videoHeight;
+
+
+
+    /*
+    Kameranın tamamını değil,
+    kırmızı hedef alanına yakın
+    merkezi bölgeyi alıyoruz.
+
+    Bu, arka plandaki yüz, mobilya,
+    duvar gibi şeylerin OCR'a karışmasını azaltır.
+    */
+
+
+    const x =
+        Math.floor(videoGen * 0.05);
+
+
+    const y =
+        Math.floor(videoYuk * 0.10);
+
+
+    const gen =
+        Math.floor(videoGen * 0.90);
+
+
+    const yuk =
+        Math.floor(videoYuk * 0.75);
+
+
+
+    /*
+    Görüntüyü büyüt.
+
+    Küçük yazılar OCR tarafından
+    daha kolay okunur.
+    */
+
+    const buyutme =
+        1.5;
+
+
+    canvas.width =
+        Math.floor(gen * buyutme);
+
+
+    canvas.height =
+        Math.floor(yuk * buyutme);
+
+
+
+    ctx.drawImage(
+
+        video,
+
+        x,
+        y,
+        gen,
+        yuk,
+
+        0,
+        0,
+
+        canvas.width,
+        canvas.height
+
+    );
+
+
+
+    /*
+    Gri ton + kontrast işlemi
+    */
+
+    const imageData =
+        ctx.getImageData(
+
+            0,
+            0,
+
+            canvas.width,
+            canvas.height
+
+        );
+
+
+    const data =
+        imageData.data;
+
+
+
+    for (
+
+        let i = 0;
+
+        i < data.length;
+
+        i += 4
+
+    ) {
+
+
+        const gri =
+
+            0.299 * data[i]
+
+            +
+
+            0.587 * data[i + 1]
+
+            +
+
+            0.114 * data[i + 2];
+
+
+
+        /*
+        Kontrast artır
+        */
+
+        let yeni =
+
+            (gri - 128) * 1.45
+            +
+            128;
+
+
+
+        if (yeni < 0) yeni = 0;
+
+        if (yeni > 255) yeni = 255;
+
+
+
+        data[i] =
+            yeni;
+
+
+        data[i + 1] =
+            yeni;
+
+
+        data[i + 2] =
+            yeni;
+
+    }
+
+
+
+    ctx.putImageData(
+
+        imageData,
+
+        0,
+        0
+
+    );
+
+
+    return canvas;
+
+}
+
+
+
+/* ==========================================
+   ETİKETİ OKU
+========================================== */
+
+async function etiketiOkuVeEkle() {
+
+
+    const video =
+        document.getElementById("kamera-video");
+
+
+    const durum =
+        document.getElementById("durum-etiket");
+
+
+    const cekBtn =
+        document.getElementById("btn-cek");
+
+
+    const ocrKutu =
+        document.getElementById("ocr-kutu");
+
+
+    const ocrMetin =
+        document.getElementById("ocr-metin");
+
+
+
+    if (!ocrMotoru) {
+
+        durum.innerText =
+            "OCR motoru henüz hazır değil.";
+
+        return;
+
+    }
+
+
+    if (!akis) {
+
+        durum.innerText =
+            "Kamera açık değil.";
+
+        return;
+
+    }
+
+
+    /*
+    EN ÖNEMLİ KİLİT:
+
+    OCR devam ederken
+    ikinci OCR başlatma.
+    */
+
+    if (ocrCalisiyor) {
+
+        return;
+
+    }
+
+
+    ocrCalisiyor =
+        true;
+
+
+    cekBtn.disabled =
+        true;
+
+
+    cekBtn.innerHTML =
+        "⏳ Okunuyor...";
+
+
+    durum.innerText =
+        "📸 Görüntü alınıyor...";
+
+
+    try {
+
+
+        /*
+        Video görüntüsünün hazır olduğundan emin ol.
+        */
+
+        if (
+
+            video.readyState < 2
+
+            ||
+
+            video.videoWidth === 0
+
+        ) {
+
+            throw new Error(
+                "Kamera görüntüsü henüz hazır değil."
+            );
+
         }
 
-        function satirSil(id) {
-            sepet = sepet.filter(u => u.id !== id);
-            tabloyuCiz();
+
+
+        const canvas =
+            kameradanGoruntuAl();
+
+
+
+        durum.innerText =
+            "🔍 Etiket OCR ile okunuyor...";
+
+
+
+        /*
+        OCR
+        */
+
+        const sonuc =
+            await ocrMotoru.recognize(
+                canvas
+            );
+
+
+        const hamMetin =
+            sonuc.data.text || "";
+
+
+
+        /*
+        OCR metnini ekranda göster
+        */
+
+        ocrKutu.style.display =
+            "block";
+
+
+        ocrMetin.innerText =
+            hamMetin;
+
+
+
+        console.log(
+            "OCR HAM METİN:",
+            hamMetin
+        );
+
+
+
+        /*
+        ETİKETİ ÇÖZ
+        */
+
+        const veri =
+            etiketiCozumle(
+                hamMetin
+            );
+
+
+
+        /* =========================
+           FİYAT BULUNDU
+        ========================= */
+
+        if (
+
+            veri.fiyat > 0
+
+            &&
+
+            veri.isim
+
+            &&
+
+            veri.isim !== "Tanımsız Ürün"
+
+        ) {
+
+
+            sepeteEkle(
+
+                veri.isim,
+
+                veri.fiyat
+
+            );
+
+
+            durum.innerText =
+
+                "✅ Eklendi: "
+
+                +
+
+                veri.isim
+
+                +
+
+                " - "
+
+                +
+
+                paraFormatla(
+                    veri.fiyat
+                );
+
+
         }
-    </script>
+
+
+        /* =========================
+           FİYAT YOK
+        ========================= */
+
+        else {
+
+
+            durum.innerText =
+                "❌ TL veya ₺ işaretli fiyat bulunamadı.";
+
+
+        }
+
+
+    }
+
+    catch (hata) {
+
+
+        console.error(
+            "OCR HATASI:",
+            hata
+        );
+
+
+        durum.innerText =
+            "❌ Hata: " +
+            hata.message;
+
+
+    }
+
+
+    finally {
+
+
+        /*
+        ÇOK ÖNEMLİ:
+
+        OCR bittikten sonra
+        ikinci etiketi okuyabilmek için
+        kilidi mutlaka açıyoruz.
+        */
+
+        ocrCalisiyor =
+            false;
+
+
+        cekBtn.disabled =
+            false;
+
+
+        cekBtn.innerHTML =
+            "🔍 Bu Etiketi Oku";
+
+
+    }
+
+
+}
+
+
+
+/* ==========================================
+   ETİKET ÇÖZÜMLEME
+========================================== */
+
+function etiketiCozumle(hamMetin) {
+
+
+    const satirlar =
+
+        hamMetin
+
+        .split("\n")
+
+        .map(
+            function(s) {
+
+                return s.trim();
+
+            }
+        )
+
+        .filter(
+            function(s) {
+
+                return s.length > 0;
+
+            }
+        );
+
+
+
+    let fiyat =
+        0;
+
+
+    let fiyatSatiri =
+        -1;
+
+
+
+    /* ======================================
+       SADECE PARA BİRİMLİ FİYAT
+
+       19 TL
+       19TL
+       19 ₺
+       19₺
+       19,50 TL
+       19.50 TL
+
+       BAŞKA SAYIYI KABUL ETME
+    ====================================== */
+
+
+    const fiyatRegex =
+
+        /(?:^|[^0-9])(\d{1,6}(?:[.,]\d{1,2})?)\s*(?:TL|₺)/i;
+
+
+
+    for (
+
+        let i = 0;
+
+        i < satirlar.length;
+
+        i++
+
+    ) {
+
+
+        const satir =
+            satirlar[i];
+
+
+        const eslesme =
+            satir.match(
+                fiyatRegex
+            );
+
+
+
+        if (eslesme) {
+
+
+            const fiyatMetni =
+
+                eslesme[1]
+
+                .replace(",", ".");
+
+
+
+            const bulunanFiyat =
+                parseFloat(
+                    fiyatMetni
+                );
+
+
+
+            if (
+
+                !isNaN(
+                    bulunanFiyat
+                )
+
+                &&
+
+                bulunanFiyat > 0
+
+                &&
+
+                bulunanFiyat < 100000
+
+            ) {
+
+
+                fiyat =
+                    bulunanFiyat;
+
+
+                fiyatSatiri =
+                    i;
+
+
+                break;
+
+            }
+
+        }
+
+    }
+
+
+
+    /*
+    Para birimi yoksa
+    KESİNLİKLE fiyat yok.
+    */
+
+    if (fiyat <= 0) {
+
+
+        return {
+
+            isim:
+                "Tanımsız Ürün",
+
+            fiyat:
+                0
+
+        };
+
+    }
+
+
+
+    /* ======================================
+       ÜRÜN ADI BULMA
+    ====================================== */
+
+
+    function yasakSatirMi(satir) {
+
+
+        const buyuk =
+            satir.toUpperCase();
+
+
+
+        /*
+        TL / ₺ bulunan satır
+        ürün adı olmasın.
+        */
+
+        if (/(TL|₺)/i.test(satir)) {
+
+            return true;
+
+        }
+
+
+
+        /*
+        Barkod:
+        Uzun sayı dizisi
+        */
+
+        if (/\d{7,}/.test(satir)) {
+
+            return true;
+
+        }
+
+
+
+        /*
+        Tarih
+        */
+
+        if (
+
+            /\d{1,2}[./-]\d{1,2}[./-]\d{2,4}/.test(
+                satir
+            )
+
+        ) {
+
+            return true;
+
+        }
+
+
+
+        /*
+        SKT / tarih kelimeleri
+        */
+
+        const yasaklar = [
+
+            "SKT",
+
+            "TETT",
+
+            "STT",
+
+            "SON KULLANMA",
+
+            "SONKULLANMA",
+
+            "ÜRETİM",
+
+            "URETIM",
+
+            "TARİH",
+
+            "TARIH",
+
+            "BARKOD",
+
+            "BARCODE",
+
+            "LOT",
+
+            "PARTİ",
+
+            "PARTI",
+
+            "SERİ",
+
+            "SERI",
+
+            "NET MİKTAR",
+
+            "NET MIKTAR",
+
+            "GR",
+
+            "KG",
+
+            "ADET"
+
+        ];
+
+
+
+        for (const kelime of yasaklar) {
+
+
+            if (
+                buyuk.includes(kelime)
+            ) {
+
+                return true;
+
+            }
+
+        }
+
+
+
+        /*
+        Sadece sayı ve sembol
+        */
+
+        if (
+
+            /^[\d\s.,:/-]+$/.test(
+                satir
+            )
+
+        ) {
+
+            return true;
+
+        }
+
+
+
+        /*
+        Çok kısa
+        */
+
+        if (
+            satir.length < 2
+        ) {
+
+            return true;
+
+        }
+
+
+        return false;
+
+    }
+
+
+
+    function urunPuani(satir) {
+
+
+        if (
+            yasakSatirMi(satir)
+        ) {
+
+            return -999;
+
+        }
+
+
+
+        const harfler =
+            satir.match(
+                /[A-Za-zÇĞİÖŞÜçğıöşü]/g
+            );
+
+
+
+        if (
+
+            !harfler
+
+            ||
+
+            harfler.length < 2
+
+        ) {
+
+            return -999;
+
+        }
+
+
+
+        let puan =
+            0;
+
+
+
+        /*
+        Harf sayısı
+        */
+
+        puan +=
+            harfler.length;
+
+
+
+        /*
+        Fazla rakam varsa
+        ürün olma ihtimali azalır.
+        */
+
+        const rakamlar =
+            satir.match(/\d/g);
+
+
+
+        if (rakamlar) {
+
+            puan -=
+                rakamlar.length * 5;
+
+        }
+
+
+
+        /*
+        Çok uzun açıklamalar
+        ürün adı olmayabilir.
+        */
+
+        if (
+            satir.length > 60
+        ) {
+
+            puan -= 10;
+
+        }
+
+
+        return puan;
+
+    }
+
+
+
+    let enIyiIsim =
+        "";
+
+
+
+    let enIyiPuan =
+        -999;
+
+
+
+    /*
+    Öncelik:
+    Fiyat satırının üstündeki
+    ürün isimleri
+    */
+
+
+    for (
+
+        let i = 0;
+
+        i < satirlar.length;
+
+        i++
+
+    ) {
+
+
+        if (
+            i === fiyatSatiri
+        ) {
+
+            continue;
+
+        }
+
+
+
+        const satir =
+            satirlar[i];
+
+
+        let puan =
+            urunPuani(
+                satir
+            );
+
+
+
+        if (
+            puan <= -999
+        ) {
+
+            continue;
+
+        }
+
+
+
+        /*
+        Fiyata yakın ürün adı
+        daha değerli.
+        */
+
+        const uzaklik =
+            Math.abs(
+                i - fiyatSatiri
+            );
+
+
+
+        puan +=
+            Math.max(
+                0,
+                20 - uzaklik * 3
+            );
+
+
+
+        if (
+
+            puan > enIyiPuan
+
+        ) {
+
+
+            enIyiPuan =
+                puan;
+
+
+            enIyiIsim =
+                satir;
+
+        }
+
+    }
+
+
+
+    /*
+    Ürün adını temizle
+    */
+
+    enIyiIsim =
+
+        enIyiIsim
+
+        .replace(
+            /[^A-Za-zÇĞİÖŞÜçğıöşü0-9\s&()-]/g,
+            " "
+        )
+
+        .replace(
+            /\s+/g,
+            " "
+        )
+
+        .trim();
+
+
+
+    if (
+
+        !enIyiIsim
+
+        ||
+
+        enIyiIsim.length < 2
+
+    ) {
+
+
+        enIyiIsim =
+            "Tanımsız Ürün";
+
+    }
+
+
+
+    return {
+
+        isim:
+            enIyiIsim,
+
+        fiyat:
+            fiyat
+
+    };
+
+
+}
+
+
+
+/* ==========================================
+   SEPETE EKLE
+========================================== */
+
+function sepeteEkle(isim, fiyat) {
+
+
+    /*
+    Aynı ürün zaten varsa
+    otomatik adet artırma.
+
+    Çünkü aynı etiketi yanlışlıkla
+    tekrar okutmak istemiyoruz.
+    */
+
+
+    const mevcut =
+        sepet.find(
+            function(urun) {
+
+                return (
+
+                    urun.isim.toUpperCase()
+
+                    ===
+
+                    isim.toUpperCase()
+
+                    &&
+
+                    urun.fiyat === fiyat
+
+                );
+
+            }
+        );
+
+
+
+    if (mevcut) {
+
+        return;
+
+    }
+
+
+
+    benzersizUrunId++;
+
+
+
+    sepet.push({
+
+        id:
+            benzersizUrunId,
+
+        isim:
+            isim,
+
+        fiyat:
+            fiyat,
+
+        adet:
+            1
+
+    });
+
+
+
+    tabloyuCiz();
+
+}
+
+
+
+/* ==========================================
+   TABLOYU ÇİZ
+========================================== */
+
+function tabloyuCiz() {
+
+
+    const tbody =
+        document.getElementById(
+            "sepet-govdesi"
+        );
+
+
+    const tablo =
+        document.getElementById(
+            "kasa-tablosu"
+        );
+
+
+    const bosMesaj =
+        document.getElementById(
+            "bos-sepet-mesaji"
+        );
+
+
+    const genelToplamAlan =
+        document.getElementById(
+            "genel-toplam"
+        );
+
+
+
+    if (
+        sepet.length === 0
+    ) {
+
+
+        tablo.style.display =
+            "none";
+
+
+        bosMesaj.style.display =
+            "block";
+
+
+        genelToplamAlan.innerText =
+            "0,00 TL";
+
+
+        return;
+
+    }
+
+
+
+    tablo.style.display =
+        "table";
+
+
+    bosMesaj.style.display =
+        "none";
+
+
+    tbody.innerHTML =
+        "";
+
+
+
+    let genelToplam =
+        0;
+
+
+
+    sepet.forEach(
+        function(urun) {
+
+
+            /*
+            NULL / boş adet koruması
+            */
+
+            if (
+
+                !urun.adet
+
+                ||
+
+                isNaN(urun.adet)
+
+                ||
+
+                urun.adet < 1
+
+            ) {
+
+                urun.adet = 1;
+
+            }
+
+
+
+            const satirToplam =
+
+                urun.fiyat
+
+                *
+
+                urun.adet;
+
+
+
+            genelToplam +=
+                satirToplam;
+
+
+
+            const tr =
+                document.createElement("tr");
+
+
+
+            tr.innerHTML = `
+
+                <td class="td-urun">
+
+                    ${htmlGuvenli(urun.isim)}
+
+                </td>
+
+
+                <td class="td-fiyat">
+
+                    ${paraFormatla(urun.fiyat)}
+
+                </td>
+
+
+                <td class="td-adet">
+
+                    <div class="adet-kutusu">
+
+                        <button
+                            class="adet-btn"
+                            onclick="adetDegistir(${urun.id}, -1)"
+                        >
+                            −
+                        </button>
+
+
+                        <input
+                            type="number"
+                            class="adet-input"
+                            value="${urun.adet}"
+                            min="1"
+                            inputmode="numeric"
+                            onchange="klavyeAdet(event, ${urun.id})"
+                        >
+
+
+                        <button
+                            class="adet-btn"
+                            onclick="adetDegistir(${urun.id}, 1)"
+                        >
+                            +
+                        </button>
+
+                    </div>
+
+                </td>
+
+
+                <td class="td-toplam">
+
+                    ${paraFormatla(satirToplam)}
+
+                </td>
+
+
+                <td class="td-sil">
+
+                    <button
+                        class="sil-btn"
+                        onclick="satirSil(${urun.id})"
+                    >
+                        🗑️
+                    </button>
+
+                </td>
+
+            `;
+
+
+
+            tbody.appendChild(
+                tr
+            );
+
+
+        }
+    );
+
+
+
+    genelToplamAlan.innerText =
+        paraFormatla(
+            genelToplam
+        );
+
+
+}
+
+
+
+/* ==========================================
+   ADET + -
+========================================== */
+
+function adetDegistir(id, miktar) {
+
+
+    const urun =
+        sepet.find(
+            function(u) {
+
+                return u.id === id;
+
+            }
+        );
+
+
+
+    if (!urun) return;
+
+
+
+    urun.adet +=
+        miktar;
+
+
+
+    if (
+        urun.adet < 1
+    ) {
+
+        urun.adet = 1;
+
+    }
+
+
+
+    tabloyuCiz();
+
+}
+
+
+
+/* ==========================================
+   KLAVYE İLE ADET
+========================================== */
+
+function klavyeAdet(event, id) {
+
+
+    const urun =
+        sepet.find(
+            function(u) {
+
+                return u.id === id;
+
+            }
+        );
+
+
+
+    if (!urun) return;
+
+
+
+    let yeniAdet =
+        parseInt(
+            event.target.value
+        );
+
+
+
+    if (
+
+        isNaN(yeniAdet)
+
+        ||
+
+        yeniAdet < 1
+
+    ) {
+
+        yeniAdet = 1;
+
+    }
+
+
+
+    urun.adet =
+        yeniAdet;
+
+
+
+    tabloyuCiz();
+
+}
+
+
+
+/* ==========================================
+   SATIR SİL
+========================================== */
+
+function satirSil(id) {
+
+
+    sepet =
+        sepet.filter(
+            function(urun) {
+
+                return urun.id !== id;
+
+            }
+        );
+
+
+
+    tabloyuCiz();
+
+}
+
+
+
+/* ==========================================
+   PARA FORMATLA
+========================================== */
+
+function paraFormatla(sayi) {
+
+
+    return Number(sayi)
+
+        .toLocaleString(
+
+            "tr-TR",
+
+            {
+
+                minimumFractionDigits: 2,
+
+                maximumFractionDigits: 2
+
+            }
+
+        )
+
+        +
+
+        " TL";
+
+}
+
+
+
+/* ==========================================
+   HTML GÜVENLİ
+========================================== */
+
+function htmlGuvenli(metin) {
+
+
+    const div =
+        document.createElement("div");
+
+
+    div.textContent =
+        metin;
+
+
+    return div.innerHTML;
+
+}
+
+
+</script>
+
+
 </body>
+
 </html>
